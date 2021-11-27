@@ -14,11 +14,13 @@ def main():
             exec(str(line), globals())
     copyfile(inputfile, 'inputfile.tmp')
 
-    if dim == 1:
+    if dim == 2:
         # run 2-D code
         if sim == 'WP':
             # run wavepacket dynamics
-            print('Not implemented')
+            from wp import runSim
+            psi_out = runSim()
+            #runsim()
             sys.exit()
         if sim == 'MF':
             # run mean-field dynamics
