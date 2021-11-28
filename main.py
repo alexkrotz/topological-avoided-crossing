@@ -1,4 +1,5 @@
 import sys
+import os
 from shutil import copyfile
 
 def main():
@@ -18,17 +19,38 @@ def main():
         # run 2-D code
         if sim == 'WP':
             # run wavepacket dynamics
-            from wp import runSim
-            psi_out = runSim()
-            #runsim()
+            from wp import runSim, genviz
+            if not(os.path.exists(calcdir)):
+                os.mkdir(calcdir)
+                runSim()
+                genviz()
+            else:
+                genviz()
+            os.remove('inputfile.tmp')
             sys.exit()
         if sim == 'MF':
             # run mean-field dynamics
-            print('Not implemented')
+            from mf import runSim, genviz
+            if not (os.path.exists(calcdir)):
+                os.mkdir(calcdir)
+            runSim()
+            genviz()
+                #genviz()
+            #else:
+            #    break
+                #genviz()
+            os.remove('inputfile.tmp')
             sys.exit()
         if sim == 'FSSH':
             # run FSSH dynamics
-            print('Not implemented')
+            from fssh import runSim, genviz
+            if not (os.path.exists(calcdir)):
+                os.mkdir(calcdir)
+                runSim()
+                genviz()
+            else:
+                genviz()
+            os.remove('inputfile.tmp')
             sys.exit()
     if dim == 1:
         # run 1-D code
