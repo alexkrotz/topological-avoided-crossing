@@ -132,10 +132,14 @@ def matprod(state_vec, dV):
     return np.conj(c0) * c0 * dV00 + np.conj(c0) * c1 * dV01 + np.conj(c1) * c0 * dV10 + np.conj(c1) * c1 * dV11
 
 
+
 def get_F(state_vec, r):
     Fx = matprod(state_vec, dVx_vec(r))
     Fy = matprod(state_vec, dVy_vec(r))
     return np.real(np.transpose(np.array([Fx, Fy])))
+
+def get_dkk(evec_j, evec_k, ev_diff, dvmat):
+    return np.matmul(np.transpose(np.conj(evec_j)),np.matmul(dvmat,evec_k))/ev_diff
 
 
 def timestepRK_C(x, px, Fx, dt):
@@ -146,7 +150,7 @@ def timestepRK_C(x, px, Fx, dt):
         q1 = Y[dim:]
         return np.concatenate((-Fx, p1 / mass))
 
-    soln = it.solve_ivp(f_h, (0, dt), np.concatenate((px, x)), method='RK45',t_eval=[dt])
+    soln = it.solve_ivp(f_h, (0, dt), np.concatenate((px, x)), method='RK45', t_eval=[dt])
     p2 = soln.y[0:dim].flatten()
     q2 = soln.y[dim:].flatten()
     return q2, p2
@@ -186,7 +190,8 @@ def get_E(state_list, r):
     V_list = V_vec(r)
     return np.real(np.sum(np.einsum('in,in->n', np.einsum('ijn,jn->in', V_list, state_list), np.conj(state_list))))
 
-
+def get_E_adb(rho_adb,evals):
+    return np.real(np.sum(rho_adb[0,0,:]*evals[0,:] +  rho_adb[1,1,:]*evals[1,:]))
 # print(state_list[:,2])
 
 
@@ -226,12 +231,18 @@ def get_p(state, p, N):
     px1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 0] / N))
     py1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 1] / N))
     return px0, py0, px1, py1
+def get_p_rho(rho, p, N):
+    px0 = np.real(np.sum(rho[0,0,:] * p[:, 0] / N))
+    py0 = np.real(np.sum(rho[0,0,:] * p[:, 1] / N))
+    px1 = np.real(np.sum(rho[1,1,:] * p[:, 0] / N))
+    py1 = np.real(np.sum(rho[1,1,:] * p[:, 1] / N))
+    return px0, py0, px1, py1
 
 def plot_state(r, state, filename):
     xedges = np.linspace(-5,5,100,endpoint=True)
     yedges = np.linspace(-5,5,100,endpoint=True)
-    pop_0 = np.abs(state[0])**2
-    pop_1 = np.abs(state[1])**2
+    pop_0 = np.real(state[0,0,:])#np.abs(state[0])**2
+    pop_1 = np.real(state[1,1,:])#np.abs(state[1])**2
     fig = plt.figure(tight_layout=False,dpi=300)
     spec = gridspec.GridSpec(ncols=2,nrows=1,figure=fig)
     ax0 = fig.add_subplot(spec[0],aspect='equal')
@@ -262,6 +273,111 @@ def plot_state(r, state, filename):
     plt.close()
     return
 
+def get_evecs(r):
+    V_list = V_vec(r)
+    evecs = np.zeros((2, 2, len(V_list[0, 0, :])), dtype=complex)
+    evals = np.zeros((2,len(V_list[0,0,:])))
+    for n in range(len(V_list[0, 0, :])):
+        eigvals, eigvecs = np.linalg.eigh(V_list[:, :, n])
+        evecs[:, :, n] = eigvecs
+        evals[:, n] = eigvals
+    return evals, evecs
+def vec_db_to_adb(psi_db, evecs):
+    psi_adb = np.zeros_like(psi_db)
+    for n in range(np.shape(psi_db)[-1]):
+        psi_adb[:, n] = np.matmul(np.transpose(np.conj(evecs[:, :, n])),psi_db[:, n])
+    return psi_adb
+def vec_adb_to_db(psi_adb, evecs):
+    psi_db = np.zeros_like(psi_adb)
+    for n in range(np.shape(psi_adb)[-1]):
+        psi_db[:, n] = np.matmul(evecs[:,:,n], psi_adb[:, n])
+    return psi_db
+def rho_adb_to_db(rho_adb, evecs):
+    rho_db = np.zeros_like(rho_adb)
+    for n in range(np.shape(rho_adb)[-1]):
+        rho_db[:,:,n] = np.matmul(evecs[:,:,n],np.matmul(rho_adb[:,:,n],np.conj(np.transpose(evecs[:,:,n]))))
+    return rho_db
+def rho_db_to_adb(rho_db, evecs):
+    rho_adb = np.zeros_like(rho_db)
+    for n in range(np.shape(rho_db)[-1]):
+        rho_adb[:,:,n] = np.matmul(np.conj(np.transpose(evecs[:,:,n])),np.matmul(rho_db[:,:,n], evecs[:,:,n]))
+    return rho_adb
+def init_act_surf(adb_pops):
+    rand = np.random.rand(np.shape(adb_pops)[-1])
+    act_surf_ind = np.zeros((np.shape(adb_pops)[-1]),dtype=int)
+    act_surf = np.zeros(np.shape(adb_pops),dtype=complex)
+    for n in range(np.shape(adb_pops)[-1]):
+        intervals = np.zeros(len(adb_pops[:,n]))
+        for m in range(len(adb_pops[:,n])):
+            intervals[m] = np.sum(np.real(adb_pops[:,n][0:m+1]))
+        act_surf_ind[n] = (np.arange(len(adb_pops[:,n]))[intervals > rand[n]])[0]
+        act_surf[:,n][act_surf_ind[n]] = 1.0
+    return act_surf_ind, act_surf
+
+def sign_adjust(eigvec_sort,eigvec_prev):
+    wf_overlap = np.sum(np.conj(eigvec_prev)*eigvec_sort,axis=0)
+    phase = wf_overlap/np.abs(wf_overlap)
+    eigvec_out = np.zeros_like(eigvec_sort)
+    for n in range(len(eigvec_sort)):
+        eigvec_out[:,n] = eigvec_sort[:,n]*np.conj(phase[n])
+    return eigvec_out
+
+@jit(nopython=True)
+def nan_num(num):
+    if np.isnan(num):
+        return 0.0
+    if num == np.inf:
+        return 100e100
+    if num == -np.inf:
+        return -100e100
+    else:
+        return num
+
+nan_num_vec = np.vectorize(nan_num)
+
+def hop(r, p, evals, evecs, evecs_prev, cg_adb, act_surf, act_surf_ind):
+    rand = np.random.rand(len(r))
+    dVx_mat = dVx_vec(r)
+    dVy_mat = dVy_vec(r)
+    for i in range(len(r)):
+        product = np.real(np.dot(np.transpose(np.conj(evecs[:,:,i])),evecs_prev[:,:,i][:,act_surf_ind[i]]))
+        hop_prob = 2 * np.real(cg_adb[:,i]/cg_adb[act_surf_ind[i],i] * product)
+        hop_prob[act_surf_ind[i]] = 0
+        bin_edge = 0
+        for k in range(len(hop_prob)):
+            hop_prob[k] = nan_num(hop_prob[k])
+            bin_edge = bin_edge + hop_prob[k]
+            if rand[i] < bin_edge:
+                evec_k = evecs[:,:,i][:,act_surf_ind[i]]
+                evec_j = evecs[:,:,i][:,k]
+                eval_k = evals[:,i][act_surf_ind[i]]
+                eval_j = evals[:,i][k]
+                ev_diff = eval_j - eval_k
+                dkkqx = get_dkk(evec_k, evec_j, ev_diff, dVx_mat[:,:,i])
+                dkkqy = get_dkk(evec_k, evec_j, ev_diff, dVy_mat[:,:,i])
+                dkkq = np.array([np.abs(dkkqx)*np.sign(np.real(dkkqx)), np.abs(dkkqy)*np.sign(np.real(dkkqy))]).flatten()
+                print(dkkq)
+                akkq = (1/(2*mass))*np.dot(dkkq,dkkq)
+                bkkq = np.dot(p[i],dkkq)
+                disc = (bkkq**2) - 4*(akkq)*mass*ev_diff
+                if disc >= 0:
+                    if bkkq < 0:
+                        gamma = bkkq + np.sqrt(disc)
+                    else:
+                        gamma = bkkq - np.sqrt(disc)
+                    if akkq == 0:
+                        gamma = 0
+                    else:
+                        gamma = gamma/(2*(akkq))
+                    p[i] = p[i] - (np.real(gamma) * dkkq/mass)
+                    act_surf_ind[i] = k
+                    act_surf[:,i] = 0
+                    act_surf[act_surf_ind[i],i] = 1
+                break
+    return p, act_surf, act_surf_ind
+
+
+
 def runSim():
     if os.path.exists(calcdir+'/run_num.npy'):
         run_num = np.load(calcdir+'/run_num.npy')
@@ -273,9 +389,15 @@ def runSim():
     r, p = get_rp(rinit, pinit, num_points)
     state_vec = np.zeros((2, num_points), dtype=complex)  # + np.sqrt(0.5) + 0.0j
     state_vec[1] = 1 + 0.0j  # wp1(r)#/np.sqrt(num_points)
+    rho_adb_out = np.zeros((len(tdat),len(state_vec),len(state_vec),len(r)),dtype=complex)
+    rho_db_out = np.zeros((len(tdat), len(state_vec), len(state_vec), len(r)), dtype=complex)
     psi_out = np.zeros((len(tdat),len(state_vec),len(r)),dtype=complex)
-    state = state_vec
-    px0, py0, px1, py1 = get_p(state, p, num_points)
+    state_db = state_vec
+    evals, evecs = get_evecs(r)
+    state_adb = vec_db_to_adb(state_db, evecs)
+    pops_adb = np.real(np.abs(state_adb)**2)
+    act_surf_ind, act_surf = init_act_surf(pops_adb)
+    px0, py0, px1, py1 = get_p(state_db, p, num_points)
     print('<0|Px|0>: ', np.round(px0, 5), ' <0|Py|0>: ', np.round(py0, 5))
     print('<1|Px|1>: ', np.round(px1, 5), ' <1|Py|1>: ', np.round(py1, 5))
     p_out = np.zeros((len(tdat),len(p), 2))
@@ -284,20 +406,31 @@ def runSim():
     for t_bath_ind in tqdm(range(len(tdat_bath))):  # tqdm(range(len(tdat_bath))):
         # print('loop num: ',t_bath_ind)
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
-            psi_out[t_ind,:,:] += state
+            rho_adb = np.zeros((2,2,np.shape(state_adb)[-1]),dtype=complex)
+            rho_adb[0,0,:] = act_surf[0,:]
+            rho_adb[1,1,:] = act_surf[1,:]
+            rho_adb[0,1,:] = np.conj(state_adb[0,:])*state_adb[1,:]
+            rho_adb[1,0,:] = state_adb[0,:]*np.conj(state_adb[1,:])
+            rho_adb_out[t_ind, :, :] = rho_adb
             p_out[t_ind,:] = p
             r_out[t_ind,:] = r
             t_ind += 1
-        if t_bath_ind == 0:
-            psi_nm1 = np.copy(state)
-            psi_n = prop_Q0(psi_nm1, r, dt_bath)
-        else:
-            state = prop_Q(psi_n, psi_nm1, r, dt_bath)
-            psi_nm1 = np.copy(psi_n)
-            psi_n = np.copy(state)
-        F = get_F(state, r)
+        F = np.zeros_like(r)#get_F(state_adb, r) # this is always zero
+        #print(F)
         r, p = prop_C(r, p, F, dt_bath)
-    np.save(calcdir + '/psi_'+str(run_num)+'.npy', psi_out)
+        evecs_previous = np.copy(evecs)
+        evals_previous = np.copy(evals)
+        evals, evecs = get_evecs(r)
+        evecs = sign_adjust(evecs, evecs_previous)
+        evals_exp = np.exp(-1.0j*evals*dt_bath)
+        diag_matrix = np.zeros((2,2,len(r)),dtype=complex)
+        diag_matrix[0,0,:] = evals_exp[0,:]
+        diag_matrix[1,1,:] = evals_exp[1,:]
+        state_adb = np.einsum('jin,jn->in',diag_matrix,vec_db_to_adb(state_db,evecs))
+        state_db = vec_adb_to_db(state_adb,evecs)
+        p, act_surf, act_surf_ind = hop(r, p, evals, evecs, evecs_previous, state_adb, act_surf, act_surf_ind)
+
+    np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
     np.save(calcdir + '/tdat.npy',tdat)
     np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
     np.save(calcdir + '/r_' + str(run_num) + '.npy', r_out)
@@ -311,18 +444,17 @@ def genviz():
         if n == 0:
             p_out = np.load(calcdir + '/p_' + str(n) + '.npy')
             r_out = np.load(calcdir + '/r_' + str(n) + '.npy')
-            state_out = np.load(calcdir + '/psi_'+str(n)+'.npy')
+            rho_adb_out = np.load(calcdir + '/rho_adb_'+str(n)+'.npy')
         else:
             p_n = np.load(calcdir + '/p_' + str(n) + '.npy')
             r_n = np.load(calcdir + '/r_' + str(n) + '.npy')
-            state_n = np.load(calcdir + '/psi_' + str(n) + '.npy')
+            rho_adb_n = np.load(calcdir + '/rho_adb_' + str(n) + '.npy')
             p_out = np.concatenate((p_out, p_n), axis=1)
             r_out = np.concatenate((r_out, r_n), axis=1)
-            state_out = np.concatenate((state_out, state_n), axis=2)
+            rho_adb_out = np.concatenate((rho_adb_out, rho_adb_n), axis=3)
     num_points = np.shape(r_out)[1]
     r_out = r_out
     p_out = p_out
-    state_out = state_out
     tdat = np.load(calcdir + '/tdat.npy')
     if not (os.path.exists(calcdir + '/images/')):
         os.mkdir(calcdir + '/images/')
@@ -340,37 +472,34 @@ def genviz():
     py1_adb = np.zeros(len(tdat))
     e_db = np.zeros(len(tdat))
     for t_ind in tqdm(range(len(tdat))):
-        state = state_out[t_ind]
         r = r_out[t_ind]
         p = p_out[t_ind]
         V_list = V_vec(r)
+        rho_adb = rho_adb_out[t_ind]
         evecs = np.zeros((2, 2, len(V_list[0, 0, :])), dtype=complex)
+        evals = np.zeros((2,len(V_list[0,0,:])))
         for n in range(len(V_list[0, 0, :])):
             eigvals, eigvecs = np.linalg.eigh(V_list[:, :, n])
             evecs[:, :, n] = eigvecs
-        def get_psi_adb(psi_db):
-            psi_adb = np.zeros_like(psi_db)
-            for n in range(np.shape(psi_db)[-1]):
-                psi_adb[:, n] = np.matmul(np.transpose(np.conj(evecs[:, :, n])), psi_db[:, n])
-            return psi_adb
+            evals[:,n]  = eigvals
+        rho_db = rho_adb_to_db(rho_adb,evecs)
         num = '{0:0>3}'.format(t_ind)
-        plot_state(r, state, calcdir + '/images/state_' + str(num) + '.png')
-        pop_db_0[t_ind] = np.sum(np.abs(state[0]) ** 2)/num_points
-        pop_db_1[t_ind] = np.sum(np.abs(state[1]) ** 2)/num_points
-        state_vec_adb = get_psi_adb(state)
-        pop_adb_0[t_ind] = np.sum(np.abs(state_vec_adb[0]) ** 2)/num_points
-        pop_adb_1[t_ind] = np.sum(np.abs(state_vec_adb[1]) ** 2)/num_points
-        px0_n, py0_n, px1_n, py1_n = get_p(state, p, num_points)
+        plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
+        pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,:]))/num_points
+        pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,:]))/num_points
+        pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,:]))/num_points
+        pop_adb_1[t_ind] = np.sum(np.real(rho_adb[1,1,:]))/num_points
+        px0_n, py0_n, px1_n, py1_n = get_p_rho(rho_db, p, num_points)
         px0[t_ind] = px0_n
         px1[t_ind] = px1_n
         py0[t_ind] = py0_n
         py1[t_ind] = py1_n
-        px0_n_adb, py0_n_adb, px1_n_adb, py1_n_adb = get_p(state_vec_adb, p, num_points)
+        px0_n_adb, py0_n_adb, px1_n_adb, py1_n_adb = get_p_rho(rho_adb, p, num_points)
         px0_adb[t_ind] = px0_n_adb
         px1_adb[t_ind] = px1_n_adb
         py0_adb[t_ind] = py0_n_adb
         py1_adb[t_ind] = py1_n_adb
-        e_db[t_ind] = (np.sum((1/(2*mass))*p**2) + get_E(state, r))/num_points
+        e_db[t_ind] = (np.sum((1/(2*mass))*p**2) + get_E_adb(rho_adb,evals))/num_points#get_E(state, r))/num_points
     fig = plt.figure(tight_layout=False, dpi=300)
     spec = gridspec.GridSpec(ncols=2, nrows=3, figure=fig)
     ax0 = fig.add_subplot(spec[0])

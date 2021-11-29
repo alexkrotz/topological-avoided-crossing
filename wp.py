@@ -117,7 +117,7 @@ for n in range(len(V_list[0,0,:])):
 def get_psi_adb(psi_db):
     psi_adb = np.zeros_like(psi_db)
     for n in range(np.shape(psi_db)[-1]):
-        psi_adb[:,n] = np.matmul(psi_db[:,n],evecs[:,:,n])
+        psi_adb[:,n] = np.matmul(np.transpose(np.conj(evecs[:,:,n])),psi_db[:,n])
     return psi_adb
 
 

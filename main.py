@@ -46,10 +46,10 @@ def main():
             from fssh import runSim, genviz
             if not (os.path.exists(calcdir)):
                 os.mkdir(calcdir)
-                runSim()
-                genviz()
-            else:
-                genviz()
+            runSim()
+            genviz()
+            #else:
+                #genviz()
             os.remove('inputfile.tmp')
             sys.exit()
     if dim == 1:
