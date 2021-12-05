@@ -56,7 +56,7 @@ def phi(x, y):
 
 @jit(nopython=True, fastmath=True)
 def dtheta(x, y):  # dtheta/dx
-    return (B * np.exp(-1.0 * B ** 2 * x ** 2) * np.sqrt(np.pi))
+    return (B * np.exp(-1.0 * (B ** 2) * (x ** 2)) * np.sqrt(np.pi))
 
 
 @jit(nopython=True, fastmath=True)
@@ -170,7 +170,7 @@ def get_Fmag(r,p,act_surf_ind):
     ry = r[:,1]
     f1x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-py)
     f1y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (px)
-    f0x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * py
+    f0x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (py)
     f0y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-px)
     out = np.zeros_like(p)
     pos0 = np.where(act_surf_ind == 0)
@@ -290,26 +290,30 @@ def plot_state(r, state, filename):
     ax0 = fig.add_subplot(spec[0],aspect='equal')
     ax1 = fig.add_subplot(spec[1],aspect='equal')
     H0, xedges, yedges = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_0,density=False)
-    H0 = np.flip(H0,axis=0)
-    xcenters=(xedges[:-1] + xedges[1:])/2
-    ycenters=(yedges[:-1] + yedges[1:])/2
-    #ax0.imshow(H0,interpolation='bilinear')
-    im0 = NonUniformImage(ax0, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
-    ax0.set_xlim([-5,5])
-    ax0.set_ylim([-5,5])
-    #print(np.shape(xcenters),np.shape(ycenters),np.shape(H0))
-    im0.set_data(xcenters,ycenters,H0)
-    ax0.images.append(im0)
+
     H1, xedges, yedges = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_1,density=False)
-    H1 = np.flip(H1,axis=0)
-    xcenters=(xedges[:-1] + xedges[1:])/2
-    ycenters=(yedges[:-1] + yedges[1:])/2
-    im1 = NonUniformImage(ax1, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
-    ax1.set_xlim([-5,5])
-    ax1.set_ylim([-5,5])
-    #ax1.imshow(H1,interpolation='bilinear')
-    im1.set_data(xcenters,ycenters,H1)
-    ax1.images.append(im1)
+    max1 = np.max(H1)
+    max0 = np.max(H0)
+    global_max = np.max(np.array([max0,max1]))
+    #H0 = np.flip(H0,axis=0)
+    #xcenters=(xedges[:-1] + xedges[1:])/2
+    #ycenters=(yedges[:-1] + yedges[1:])/2
+    ax0.imshow(H0,interpolation='bilinear', vmin=0, vmax = global_max)
+    #im0 = NonUniformImage(ax0, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
+    #ax0.set_xlim([-5,5])
+    #ax0.set_ylim([-5,5])
+    #print(np.shape(xcenters),np.shape(ycenters),np.shape(H0))
+    #im0.set_data(xcenters,ycenters,H0)
+    #ax0.images.append(im0)
+    #H1 = np.flip(H1,axis=0)
+    #xcenters=(xedges[:-1] + xedges[1:])/2
+    #ycenters=(yedges[:-1] + yedges[1:])/2
+    #im1 = NonUniformImage(ax1, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
+    #ax1.set_xlim([-5,5])
+    #ax1.set_ylim([-5,5])
+    ax1.imshow(H1,interpolation='bilinear',vmin=0,vmax=global_max)
+    #im1.set_data(xcenters,ycenters,H1)
+    #ax1.images.append(im1)
     plt.savefig(filename)
     #plt.show()
     plt.close()
@@ -330,14 +334,14 @@ def get_evecs_analytical(r):
     y = r[:,1]
     evec_0 = np.ascontiguousarray(np.zeros((2,len(r))))+0.0j
     evec_1 = np.ascontiguousarray(np.zeros((2, len(r)))) + 0.0j
-    evec_0[0,:] = np.cos(theta(x,y)/2)*np.exp(1.0j*phi(x,y))#np.array([,])
-    evec_0[1,:] = -np.sin(theta(x,y)/2)
-    evec_1[0,:] = np.sin(theta(x,y)/2)*np.exp(1.0j*phi(x,y))
-    evec_1[1,:] = np.cos(theta(x,y)/2)
+    evec_0[0,:] = np.cos(theta(x,y)/2)*np.exp(1.0j*phi(x,y))#nan_num(-np.exp(1.0j*phi(x,y))*np.cos(theta(x,y)/2)/np.sin(theta(x,y)/2))#np.array([,])
+    evec_0[1,:] = -np.sin(theta(x,y)/2)#1#
+    evec_1[0,:] = np.sin(theta(x,y)/2)*np.exp(1.0j*phi(x,y))#nan_num(np.exp(1.0j*phi(x,y))*np.sin(theta(x,y)/2)/np.cos(theta(x,y)/2))#
+    evec_1[1,:] = np.cos(theta(x,y)/2)#1#
     evecs_out = np.ascontiguousarray(np.zeros((2,2,len(r))))+0.0j
     evals_out = np.zeros((2,len(r)))
-    evecs_out[:,0,:] = evec_0
     evecs_out[:,1,:] = evec_1
+    evecs_out[:,0,:] = evec_0
     evals_out[0,:] = -A
     evals_out[1,:] = A
     return evals_out, evecs_out
@@ -434,6 +438,7 @@ def method2(dkkqx, dkkqy):
         return np.array([1,0])
     else:
         return np.array([0,1])
+
 
 @jit(nopython=True)
 def method2_analytical(dkkqx,dkkqy):
@@ -672,7 +677,7 @@ def hop(r, p, evals, evecs, evecs_prev, cg_adb, act_surf, act_surf_ind):
     return p, act_surf, act_surf_ind
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def new_hop(r,p,cg_db,act_surf,act_surf_ind):
     evals, evecs = get_evecs_analytical(r)
     evals_exp = np.exp(-1.0j * evals * dt_bath)
@@ -688,10 +693,10 @@ def new_hop(r,p,cg_db,act_surf,act_surf_ind):
     cg_adb_b = get_cgadb_act(cg_adb,b_surf_ind)#cg_adb[b_surf_ind,ran]
     pdab = np.ascontiguousarray(np.zeros(np.shape(act_surf_ind)))+0.0j
     ind_0 = np.where(act_surf_ind == 0)
-    pdab[ind_0] = p[:,0][ind_0] * dkkx_list[ind_0] + p[:,1][ind_0] * dkky_list[ind_0]
+    pdab[ind_0] = (p[:,0][ind_0]/mass) * dkkx_list[ind_0] + (p[:,1][ind_0]/mass) * dkky_list[ind_0]
     ind_1 = np.where(act_surf_ind == 1)
-    pdab[ind_1] = p[:,0][ind_1] * -np.conj(dkkx_list[ind_1]) + p[:,1][ind_1] * -np.conj(dkky_list[ind_1])
-    hop_prob = -2 * dt_bath * np.real((cg_adb_b/cg_adb_a) * pdab)
+    pdab[ind_1] = (p[:,0][ind_1]/mass) * -np.conj(dkkx_list[ind_1]) + (p[:,1][ind_1]/mass) * -np.conj(dkky_list[ind_1])
+    hop_prob =  2 * dt_bath * np.real((cg_adb_b/cg_adb_a) * (pdab))
     hop_prob = nan_num(hop_prob)
     hop_pos = np.where(rand < hop_prob)[0]
     if len(hop_pos) > 0:
@@ -707,7 +712,7 @@ def new_hop(r,p,cg_db,act_surf,act_surf_ind):
                 dkkqy = -1.0 * np.conj(dkkqy)
             dkkq = method2(dkkqx, dkkqy)
             akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
-            bkkq = np.sum((p[pos] / mass) * dkkq)
+            bkkq = np.sum((p[pos]/mass) * dkkq)
             disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
             if disc >= 0:
                 if bkkq < 0:
@@ -815,27 +820,14 @@ def runSim():
             rho_adb_out[t_ind, :, :, :] = rho_adb
             p_out[t_ind,:] = p
             r_out[t_ind,:] = r
-            dablist[t_ind] = np.real(np.sum(prod))#np.linalg.norm(prod[0, 0])
+            dablist[t_ind] = np.real(np.sum(prod))
             t_ind += 1
-        F = np.zeros_like(r)#get_F(state_adb, r) # this is always zero
+        F = np.zeros_like(r)
         Fmag = get_Fmag(r,p,act_surf_ind)
-        #Fmag = np.zeros_like(r)
-        #F =  get_F(state_db, r)
-        #Fmag = 0*F
+        if not(include_fmag):
+            Fmag *= 0
         r, p = prop_C(r, p, -F+Fmag, dt_bath)
         p, act_surf, act_surf_ind, state_adb, state_db = new_hop(r, p, state_db, act_surf, act_surf_ind)
-        ##evecs_previous = np.copy(evecs)
-        #evals, evecs = get_evecs_analytical(r)
-        #evals_exp = np.exp(-1.0j*evals*dt_bath)
-        ##diag_matrix = np.zeros((2,2,len(r)),dtype=complex)
-        ##diag_matrix[0,0,:] = evals_exp[0,:]
-        ##diag_matrix[1,1,:] = evals_exp[1,:]
-        #state_adb_t0 = vec_db_to_adb(state_db,evecs)
-        #state_adb[0, :] = evals_exp[0, :] * state_adb_t0[0, :]
-        #state_adb[1, :] = evals_exp[1, :] * state_adb_t0[1, :]
-        ##state_adb = np.einsum('jin,jn->in',diag_matrix,state_adb_t0)
-        #state_db = vec_adb_to_db(state_adb,evecs)
-        #p, act_surf, act_surf_ind  = new_hop(r,p,state_adb,act_surf,act_surf_ind)
     np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
     np.save(calcdir + '/tdat.npy',tdat)
     np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
@@ -881,18 +873,11 @@ def genviz():
     for t_ind in tqdm(range(len(tdat))):
         r = r_out[t_ind]
         p = p_out[t_ind]
-        #V_list = V_vec(r)
         rho_adb = rho_adb_out[t_ind]
-        #evecs = np.zeros((2, 2, len(V_list[0, 0, :])), dtype=complex)
-        #evals = np.zeros((2,len(V_list[0,0,:])))
-        #for n in range(len(V_list[0, 0, :])):
-        #    eigvals, eigvecs = np.linalg.eigh(V_list[:, :, n])
-        #    evecs[:, :, n] = eigvecs
-        #    evals[:,n]  = eigvals
         evals, evecs = get_evecs_analytical(r)
         rho_db = rho_adb_to_db(rho_adb,evecs)
         num = '{0:0>3}'.format(t_ind)
-        #plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
+        plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,:]))/num_points
         pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,:]))/num_points
         pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,:]))/num_points

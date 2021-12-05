@@ -176,7 +176,14 @@ def prop_C(r, p, F, dt):
     # r_out,p_out = RK4(r,p,F,dt)
     return r_out, p_out
 
-
+@jit(nopython=True,fastmath=True)
+def prop_Cold(r, p, F, dt):
+    #r_out = np.zeros_like(r)
+    #p_out = np.zeros_like(p)
+    #for n in range(len(r[0])):
+    #    r_out[:, n], p_out[:, n] = timestepRK_C(r[:, n], p[:, n], F[:, n], dt)  # RK4(r[:,n],p[:,n],F[:,n],dt)#
+    r_out,p_out = RK4(r,p,F,dt)
+    return r_out, p_out
 def get_V_state(state_list, r):
     V_list = V_vec(r)
     return np.einsum('ijn,jn->in', V_list, state_list)
@@ -237,26 +244,30 @@ def plot_state(r, state, filename):
     ax0 = fig.add_subplot(spec[0],aspect='equal')
     ax1 = fig.add_subplot(spec[1],aspect='equal')
     H0, xedges, yedges = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_0,density=False)
-    H0 = np.flip(H0,axis=0)
+    #H0 = np.flip(H0,axis=0)
+    # im0 = NonUniformImage(ax0, interpolation='bilinear', extent=(-5, 5, -5, 5), vmin=0, vmax=1, cmap='viridis')
+    # ax0.set_xlim([-5,5])
+    # ax0.set_ylim([-5,5])
+    # print(np.shape(xcenters),np.shape(ycenters),np.shape(H0))
+    # im0.set_data(xcenters,ycenters,H0)
+    # ax0.images.append(im0)
+    H1, xedges, yedges = np.histogram2d(r[:, 0], r[:, 1], bins=(xedges, yedges), weights=pop_1, density=False)
+    #H1 = np.flip(H1, axis=0)
+    xcenters = (xedges[:-1] + xedges[1:]) / 2
+    ycenters = (yedges[:-1] + yedges[1:]) / 2
+    # im1 = NonUniformImage(ax1, interpolation='bilinear', extent=(-5, 5, -5, 5), vmin=0, vmax=1, cmap='viridis')
+    # ax1.set_xlim([-5,5])
+    # ax1.set_ylim([-5,5])
     xcenters=(xedges[:-1] + xedges[1:])/2
     ycenters=(yedges[:-1] + yedges[1:])/2
-    #ax0.imshow(H0,interpolation='bilinear')
-    im0 = NonUniformImage(ax0, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
-    ax0.set_xlim([-5,5])
-    ax0.set_ylim([-5,5])
-    #print(np.shape(xcenters),np.shape(ycenters),np.shape(H0))
-    im0.set_data(xcenters,ycenters,H0)
-    ax0.images.append(im0)
-    H1, xedges, yedges = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_1,density=False)
-    H1 = np.flip(H1,axis=0)
-    xcenters=(xedges[:-1] + xedges[1:])/2
-    ycenters=(yedges[:-1] + yedges[1:])/2
-    im1 = NonUniformImage(ax1, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
-    ax1.set_xlim([-5,5])
-    ax1.set_ylim([-5,5])
-    #ax1.imshow(H1,interpolation='bilinear')
-    im1.set_data(xcenters,ycenters,H1)
-    ax1.images.append(im1)
+    H1max = np.max(H1)
+    H0max = np.max(H0)
+    global_max = np.max(np.array([H1max,H0max]))
+    print(global_max)
+    ax0.imshow(H0,interpolation='bilinear', vmin=0, vmax=global_max)
+    ax1.imshow(H1,interpolation='bilinear', vmin=0, vmax=global_max)
+    #im1.set_data(xcenters,ycenters,H1)
+    #ax1.images.append(im1)
     plt.savefig(filename)
     #plt.show()
     plt.close()
