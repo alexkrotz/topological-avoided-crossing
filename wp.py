@@ -80,24 +80,30 @@ def wp0(r):
     return  0 * r[:,0]
 
 #xran=[-5,5]
-Nx = N; # N
-L = xran[1]-xran[0]
-jlist = np.arange(0,Nx-1+1,1)# j = 0,1,...,N-1
-kxlist = np.concatenate((np.arange(0,Nx/2+1,1),np.arange((-Nx/2),0)))*2*np.pi/L#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
-kylist = np.copy(kxlist)
+#Nx = Nx; # N
+#Ny = Ny;
+Lx = xran[1]-xran[0]
+Ly = yran[1]-yran[0]
+jxlist = np.arange(0,Nx-1+1,1)# j = 0,1,...,N-1
+jylist = np.arange(0,Ny-1+1,1)
+kxlist = np.concatenate((np.arange(0,Nx/2+1,1),np.arange((-Nx/2),0)))*2*np.pi/Lx#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
+kylist = np.concatenate((np.arange(0,Ny/2+1,1),np.arange((-Ny/2),0)))*2*np.pi/Ly#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
 klist = np.array(tuple(itertools.product(kxlist,kylist)))
 kxgrid = klist[:,0].reshape(len(kxlist),len(kylist))
 kygrid = klist[:,1].reshape(len(kxlist),len(kylist))
 knorm = np.linalg.norm(klist,axis=1)**2
 kgrid = knorm.reshape(len(kxlist),len(kylist))
-xjlist = 2*np.pi*jlist/Nx
-dk = 2*np.pi/L
-print('FFT grid ranges from, ',-np.pi*Nx/L, 'to ',np.pi*Nx/L)
+xjlist = 2*np.pi*jxlist/Nx
+yjlist = 2*np.pi*jylist/Ny
+dkx = 2*np.pi/Lx
+dky = 2*np.pi/Ly
+print('FFT x grid ranges from, ',-np.pi*Nx/Lx, 'to ',np.pi*Nx/Lx)
+print('FFT y grid ranges from, ',-np.pi*Ny/Ly, 'to ',np.pi*Ny/Ly)
 #xran = [-L/2,L/2]
 xlist = np.linspace(xran[0],xran[1],Nx+1)
+ylist = np.linspace(yran[0],yran[1],Ny+1)
 dx = (xran[1]-xran[0])/(Nx)
-
-ylist = np.copy(xlist)
+dy = (yran[1]-yran[0])/(Ny)
 rlist = np.array(tuple(itertools.product(xlist, ylist)))
 V_list = V_vec(rlist)
 ev0 = np.zeros(len(V_list[0,0,:]))
@@ -138,13 +144,13 @@ def get_grad(wplist):
 
 
 def get_px(wplist):
-    wpgrid = wplist.reshape(Nx+1,Nx+1)
+    wpgrid = wplist.reshape(Nx+1,Ny+1)
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid)*np.fft.ifft2(kxgrid*wpgrid_k)))
 
 
 def get_py(wplist):
-    wpgrid = wplist.reshape(Nx+1,Nx+1)
+    wpgrid = wplist.reshape(Nx+1,Ny+1)
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid)*np.fft.ifft2(kygrid*wpgrid_k)))
 
@@ -211,13 +217,13 @@ def plot_state(state_vec,filename):
     ax0.imshow(np.abs(psi0.reshape(xdim,ydim))**2,vmin=0,vmax=pmax)
     ax0.set_xticks(np.linspace(0,Nx,5))
     ax0.set_xticklabels(np.linspace(xran[0],xran[1],5))
-    ax0.set_yticks(np.linspace(0, Nx, 5))
-    ax0.set_yticklabels(np.linspace(xran[0], xran[1], 5))
+    ax0.set_yticks(np.linspace(0, Ny, 5))
+    ax0.set_yticklabels(np.linspace(yran[0], yran[1], 5))
     ax1.imshow(np.abs(psi1.reshape(xdim,ydim))**2,vmin=0,vmax=pmax)
     ax1.set_xticks(np.linspace(0, Nx, 5))
     ax1.set_xticklabels(np.linspace(xran[0], xran[1], 5))
-    ax1.set_yticks(np.linspace(0, Nx, 5))
-    ax1.set_yticklabels(np.linspace(xran[0], xran[1], 5))
+    ax1.set_yticks(np.linspace(0, Ny, 5))
+    ax1.set_yticklabels(np.linspace(yran[0], yran[1], 5))
     plt.savefig(filename)
     #plt.show()
     plt.close()
@@ -271,7 +277,7 @@ def genviz():
     for t_ind in tqdm(range(np.shape(psi)[0])):
         num = '{0:0>3}'.format(t_ind)
         state = psi[t_ind]
-        plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
+        #plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.abs(state[0]) ** 2)
         pop_db_1[t_ind] = np.sum(np.abs(state[1]) ** 2)
         state_vec_adb = get_psi_adb(state)

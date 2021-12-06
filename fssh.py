@@ -869,8 +869,8 @@ def genviz():
         rho_adb = rho_adb_out[t_ind]
         evals, evecs = get_evecs_analytical(r)
         rho_db = rho_adb_to_db(rho_adb,evecs)
-        num = '{0:0>3}'.format(t_ind)
-        plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
+        #num = '{0:0>3}'.format(t_ind)
+        #plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,:]))/num_points
         pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,:]))/num_points
         pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,:]))/num_points
