@@ -20,7 +20,7 @@ yran=[-5,10]\r\n\
 rinit=[-3,0]\r\n\
 pinit=["+str(px)+","+str(py)+"]\r\n\
 calcdir = str(sim)+'_'+str(dim)+'_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(rinit)+'_'+str(pinit)+'_'+str(Nx)+'_'+str(Ny)+'_'+str(xran)+'_'+str(yran)+'_'+str(dt)+'_'+str(dt_bath)+'_'+str(tmax)"
-    filename = 'WP_' + str(A) + '_' + str(B) + '_' + str(W) + '_' + str(px) + '_' + str(py)
+    filename = 'WP_' + str(A) + '_' + str(B) + '_' + str(W) + '_' + str(px) + '_' + str(py)+'.in'
     return out, filename
 
 def gen_sh_input(A,B,W,px,py):
@@ -38,5 +38,5 @@ rinit=[-3,0]\r\n\
 pinit=["+str(px)+","+str(py)+"]\r\n\
 include_fmag=True\r\n\
 calcdir = str(sim)+'_'+str(include_fmag)+'_'+str(dim)+'_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(rinit)+'_'+str(pinit)+'_'+str(dt)+'_'+str(dt_bath)+'_'+str(tmax)"
-    filename = 'SH_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(px)+'_'+str(py)
+    filename = 'FSSH_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(px)+'_'+str(py)+'.in'
     return out, filename

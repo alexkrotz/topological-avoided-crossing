@@ -144,15 +144,15 @@ def get_grad(wplist):
 
 
 def get_px(wplist):
-    wpgrid = wplist.reshape(Nx+1,Ny+1)
+    wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
-    return np.real(np.sum(np.conj(wpgrid)*np.fft.ifft2(kxgrid*wpgrid_k)))
+    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid * wpgrid_k)) / (np.sum(np.abs(wpgrid)**2)))
 
 
 def get_py(wplist):
-    wpgrid = wplist.reshape(Nx+1,Ny+1)
+    wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
-    return np.real(np.sum(np.conj(wpgrid)*np.fft.ifft2(kygrid*wpgrid_k)))
+    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kygrid * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
 
 print('<0|Px|0>: ',np.round(get_px(state_list[0]),5),' <0|Py|0>: ', np.round(get_py(state_list[0]),5))
 print('<1|Px|1>: ',np.round(get_px(state_list[1]),5),' <1|Py|1>: ', np.round(get_py(state_list[1]),5))

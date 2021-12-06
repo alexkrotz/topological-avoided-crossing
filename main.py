@@ -45,7 +45,7 @@ def main():
                                 genviz()
                             else:
                                 print('found')
-                                #genviz()
+                                genviz()
                             os.remove('inputfile.tmp')
                             del runSim
                             del genviz
@@ -92,9 +92,7 @@ def main():
                                     name, value = line1.split("=")
                                     exec(str(line), globals())
                             copyfile(filename, 'inputfile.tmp')
-                            print('starting import')
                             from fssh import runSim, genviz
-                            print('finished import')
                             if not (os.path.exists(calcdir)):
                                 os.mkdir(calcdir)
                                 runSim()
@@ -105,18 +103,18 @@ def main():
                             os.remove('inputfile.tmp')
                             del runSim
                             del genviz
-                            del sys.modules['wp']
-
-        # run FSSH dynamics
-        from fssh import runSim, genviz
-        if not (os.path.exists(calcdir)):
-            os.mkdir(calcdir)
-        runSim()
-        genviz()
-        #else:
-            #genviz()
-        os.remove('inputfile.tmp')
-        sys.exit()
+                            del sys.modules['fssh']
+        else:
+            # run FSSH dynamics
+            from fssh import runSim, genviz
+            if not (os.path.exists(calcdir)):
+                os.mkdir(calcdir)
+            runSim()
+            genviz()
+            #else:
+                #genviz()
+            os.remove('inputfile.tmp')
+            sys.exit()
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':

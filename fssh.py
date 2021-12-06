@@ -268,16 +268,18 @@ def wigner_vec(r, p):
 num_points = N
 
 def get_p(state, p, N):
-    px0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 0] / N))
-    py0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 1] / N))
-    px1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 0] / N))
-    py1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 1] / N))
+    px0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 0] / N) / np.sum((np.abs(state[0]) ** 2) / N))
+    py0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 1] / N) / np.sum((np.abs(state[0]) ** 2) / N))
+    px1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 0] / N) / np.sum((np.abs(state[1]) ** 2) / N))
+    py1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 1] / N) / np.sum((np.abs(state[1]) ** 2) / N))
     return px0, py0, px1, py1
+
+
 def get_p_rho(rho, p, N):
-    px0 = np.real(np.sum(rho[0,0,:] * p[:, 0] / N))
-    py0 = np.real(np.sum(rho[0,0,:] * p[:, 1] / N))
-    px1 = np.real(np.sum(rho[1,1,:] * p[:, 0] / N))
-    py1 = np.real(np.sum(rho[1,1,:] * p[:, 1] / N))
+    px0 = np.real(np.sum(rho[0, 0, :] * p[:, 0] / N) / np.sum(rho[0, 0, :] / N))
+    py0 = np.real(np.sum(rho[0, 0, :] * p[:, 1] / N) / np.sum(rho[0, 0, :] / N))
+    px1 = np.real(np.sum(rho[1, 1, :] * p[:, 0] / N) / np.sum(rho[1, 1, :] / N))
+    py1 = np.real(np.sum(rho[1, 1, :] * p[:, 1] / N) / np.sum(rho[1, 1, :] / N))
     return px0, py0, px1, py1
 
 def plot_state(r, state, filename):
