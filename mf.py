@@ -263,13 +263,11 @@ def plot_state(r, state, filename):
     H1max = np.max(H1)
     H0max = np.max(H0)
     global_max = np.max(np.array([H1max,H0max]))
-    print(global_max)
     ax0.imshow(H0,interpolation='bilinear', vmin=0, vmax=global_max)
     ax1.imshow(H1,interpolation='bilinear', vmin=0, vmax=global_max)
     #im1.set_data(xcenters,ycenters,H1)
     #ax1.images.append(im1)
     plt.savefig(filename)
-    #plt.show()
     plt.close()
     return
 
@@ -292,8 +290,7 @@ def runSim():
     p_out = np.zeros((len(tdat),len(p), 2))
     r_out = np.zeros((len(tdat),len(r), 2))
     t_ind = 0
-    for t_bath_ind in tqdm(range(len(tdat_bath))):  # tqdm(range(len(tdat_bath))):
-        # print('loop num: ',t_bath_ind)
+    for t_bath_ind in tqdm(range(len(tdat_bath))):
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
             psi_out[t_ind,:,:] += state
             p_out[t_ind,:] = p

@@ -230,10 +230,12 @@ def runSim():
     psi_out = np.zeros((len(tdat),len(state_list),len(rlist)),dtype=complex)
     state = state_list
     t_ind = 0
-    for t_bath_ind in tqdm(range(len(tdat_bath))):  # tqdm(range(len(tdat_bath))):
-        # print('loop num: ',t_bath_ind)
+    for t_bath_ind in tqdm(range(len(tdat_bath))):
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
             psi_out[t_ind,:,:] += state
+            if np.abs(1-np.sum(np.abs(state)**2)) > 1e-3:
+                print('Normalization error: ',np.abs(1-np.sum(np.abs(state)**2)))
+                exit()
             t_ind += 1
         if t_bath_ind == 0:
             psi_nm1 = state_list

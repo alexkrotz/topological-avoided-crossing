@@ -413,7 +413,6 @@ def sign_adjust(eigvec_sort,eigvec_prev):
         eigvec_out[:,n] = eigvec_sort[:,n]*np.conj(phase[n])
     return eigvec_out
 
-#@jit(nopython=True)
 @nb.vectorize
 def nan_num(num):
     if np.isnan(num):
@@ -424,8 +423,6 @@ def nan_num(num):
         return -100e100
     else:
         return num
-
-#nan_num_vec = np.vectorize(nan_num)
 
 @jit(nopython=True)
 def method2(dkkqx, dkkqy):
@@ -790,10 +787,6 @@ def runSim():
     tdat = np.arange(0,tmax+dt,dt)
     tdat_bath = np.arange(0,tmax+dt_bath,dt_bath)
     r, p = get_rp(rinit, pinit, num_points)
-    #r[:,0] = -3
-    #r[:,1] = 0
-    #p[:,0] = 20
-    #p[:,1] = 0
     state_vec = np.zeros((2, num_points), dtype=complex)  # + np.sqrt(0.5) + 0.0j
     state_vec[1] = 1 + 0.0j  # wp1(r)#/np.sqrt(num_points)
     rho_adb_out = np.zeros((len(tdat),len(state_vec),len(state_vec),len(r)),dtype=complex)
@@ -813,8 +806,8 @@ def runSim():
     for t_bath_ind in tqdm(range(len(tdat_bath))):
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
             rho_adb = np.zeros((2,2,np.shape(state_adb)[-1]),dtype=complex)
-            rho_adb[0,0,:] = act_surf[0,:]#np.conj(state_adb[0,:])*state_adb[0,:]#
-            rho_adb[1,1,:] = act_surf[1,:]#np.conj(state_adb[1,:])*state_adb[1,:]#
+            rho_adb[0,0,:] = act_surf[0,:]
+            rho_adb[1,1,:] = act_surf[1,:]
             rho_adb[0,1,:] = np.conj(state_adb[0,:])*state_adb[1,:]
             rho_adb[1,0,:] = state_adb[0,:]*np.conj(state_adb[1,:])
             rho_adb_out[t_ind, :, :, :] = rho_adb
