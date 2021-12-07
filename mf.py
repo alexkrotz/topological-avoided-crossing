@@ -7,22 +7,7 @@ import math
 import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from os.path import expanduser
-import matplotlib.font_manager as font_manager
 from tqdm import tqdm
-fontpath = expanduser('/home/akrotz/Documents/Research/pyMQC/fonts/truetype/msttcorefonts/Times_New_Roman.ttf')
-prop = font_manager.FontProperties(fname=fontpath)
-mpl.rcParams['font.family'] = prop.get_name()
-mpl.rcParams['text.usetex'] = False
-mpl.rcParams['mathtext.rm']=prop.get_name()
-nice_fonts = {
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif" : "Times New Roman",
-    "font.weight"  : "bold",
-}
-mpl.rcParams.update(nice_fonts)
 
 
 with open('inputfile.tmp') as f:

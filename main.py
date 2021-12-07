@@ -27,7 +27,7 @@ def main():
                 for B in B_vals:
                     for A in A_vals:
                         for p_vec in p_vec_list:
-                            input_data, filename = gen_wp_input(A,B,W,p_vec[0],p_vec[1])
+                            input_data, filename = gen_wp_input(A,B,W,p_vec[0],p_vec[1],xran,yran,pxmax,pymax)
                             write_input(filename,input_data)
                             with open(filename) as f:
                                 for line in f:
@@ -36,15 +36,12 @@ def main():
                                     name, value = line1.split("=")
                                     exec(str(line), globals())
                             copyfile(filename, 'inputfile.tmp')
-                            print('starting import')
                             from wp import runSim, genviz
-                            print('finished import')
                             if not (os.path.exists(calcdir)):
                                 os.mkdir(calcdir)
                                 runSim()
                                 genviz()
                             else:
-                                print('found')
                                 genviz()
                             os.remove('inputfile.tmp')
                             del runSim
@@ -83,7 +80,7 @@ def main():
                 for B in B_vals:
                     for A in A_vals:
                         for p_vec in p_vec_list:
-                            input_data, filename = gen_sh_input(A, B, W, p_vec[0], p_vec[1])
+                            input_data, filename = gen_sh_input(A, B, W, N, p_vec[0], p_vec[1])
                             write_input(filename, input_data)
                             with open(filename) as f:
                                 for line in f:
@@ -97,9 +94,6 @@ def main():
                                 os.mkdir(calcdir)
                                 runSim()
                                 genviz()
-                            else:
-                                print('found')
-                                # genviz()
                             os.remove('inputfile.tmp')
                             del runSim
                             del genviz
@@ -111,8 +105,6 @@ def main():
                 os.mkdir(calcdir)
             runSim()
             genviz()
-            #else:
-                #genviz()
             os.remove('inputfile.tmp')
             sys.exit()
 

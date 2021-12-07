@@ -7,24 +7,7 @@ import math
 import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from os.path import expanduser
-import matplotlib.font_manager as font_manager
 from tqdm import tqdm
-fontpath = expanduser('/home/akrotz/Documents/Research/pyMQC/fonts/truetype/msttcorefonts/Times_New_Roman.ttf')
-prop = font_manager.FontProperties(fname=fontpath)
-mpl.rcParams['font.family'] = prop.get_name()
-mpl.rcParams['text.usetex'] = False
-mpl.rcParams['mathtext.rm']=prop.get_name()
-nice_fonts = {
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif" : "Times New Roman",
-    "font.weight"  : "bold",
-}
-mpl.rcParams.update(nice_fonts)
-
-
 with open('inputfile.tmp') as f:
     for line in f:
         line1 = line.replace(" ", "")
@@ -146,6 +129,7 @@ def get_grad(wplist):
 def get_px(wplist):
     wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
+    print(np.shape(wplist),Nx+1,Ny+1,np.shape(wpgrid),np.shape(wpgrid_k))
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid * wpgrid_k)) / (np.sum(np.abs(wpgrid)**2)))
 
 
@@ -210,16 +194,18 @@ def plot_state(state_vec,filename):
     psi1 = state_vec[1]
     psi0 = state_vec[0]
     pmax = np.max(np.abs(state_vec)**2)
+    pmax0 = np.max(np.abs(psi0)**2)
+    pmax1 = np.max(np.abs(psi1)**2)
     fig = plt.figure(tight_layout=False,dpi=300)
     spec = gridspec.GridSpec(ncols=2,nrows=1,figure=fig)
     ax0 = fig.add_subplot(spec[0])
     ax1 = fig.add_subplot(spec[1])
-    ax0.imshow(np.abs(psi0.reshape(xdim,ydim))**2,vmin=0,vmax=pmax)
+    ax0.imshow(np.abs(psi0.reshape(xdim,ydim))**2,vmin=0,vmax=pmax0)
     ax0.set_xticks(np.linspace(0,Nx,5))
     ax0.set_xticklabels(np.linspace(xran[0],xran[1],5))
     ax0.set_yticks(np.linspace(0, Ny, 5))
     ax0.set_yticklabels(np.linspace(yran[0], yran[1], 5))
-    ax1.imshow(np.abs(psi1.reshape(xdim,ydim))**2,vmin=0,vmax=pmax)
+    ax1.imshow(np.abs(psi1.reshape(xdim,ydim))**2,vmin=0,vmax=pmax1)
     ax1.set_xticks(np.linspace(0, Nx, 5))
     ax1.set_xticklabels(np.linspace(xran[0], xran[1], 5))
     ax1.set_yticks(np.linspace(0, Ny, 5))
