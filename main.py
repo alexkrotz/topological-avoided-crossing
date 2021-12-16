@@ -80,7 +80,7 @@ def main():
                 for B in B_vals:
                     for A in A_vals:
                         for p_vec in p_vec_list:
-                            input_data, filename = gen_sh_input(A, B, W, N, p_vec[0], p_vec[1])
+                            input_data, filename = gen_sh_input(A, B, W, N, p_vec[0], p_vec[1], rescale_method)
                             write_input(filename, input_data)
                             with open(filename) as f:
                                 for line in f:
@@ -92,8 +92,8 @@ def main():
                             from fssh import runSim, genviz
                             if not (os.path.exists(calcdir)):
                                 os.mkdir(calcdir)
-                                runSim()
-                                genviz()
+                            runSim()
+                            genviz()
                             os.remove('inputfile.tmp')
                             del runSim
                             del genviz

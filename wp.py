@@ -129,7 +129,6 @@ def get_grad(wplist):
 def get_px(wplist):
     wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
-    print(np.shape(wplist),Nx+1,Ny+1,np.shape(wpgrid),np.shape(wpgrid_k))
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid * wpgrid_k)) / (np.sum(np.abs(wpgrid)**2)))
 
 

@@ -411,18 +411,172 @@ def nan_num(num):
     else:
         return num
 
+@nb.vectorize
+def nan_num2(num):
+    if np.isnan(num):
+        return 0.0
+    if num == np.inf:
+        return 0
+    if num == -np.inf:
+        return 0
+    else:
+        return num
+
 @jit(nopython=True)
-def method2(dkkqx, dkkqy):
+def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf):
     phase_x = np.conj(dkkqx/np.abs(dkkqx))
     dkkqx = dkkqx * phase_x
     dkkqy = dkkqy * phase_x
     fac1 = np.real(2*dkkqx)**2
     fac2 = np.real(-1.0j*2*dkkqy)**2
     if fac1 > fac2:
-        return np.array([1,0])
+        dkkq = np.array([1,0])
     else:
-        return np.array([0,1])
+        dkkq = np.array([0,1])
+    akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
+    bkkq = np.sum((p[pos] / mass) * dkkq)
+    disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p[pos] = p[pos] - (np.real(gamma) * dkkq)
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
 
+
+@jit(nopython=True)
+def method3_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf): # rescale p in the complex direction then rotate to real
+    dkkq = np.array([dkkqx,dkkqy])
+    akkq = np.real((1 / (2 * mass)) * np.sum(np.conj(dkkq) * dkkq))
+    bkkq = np.sum((p[pos] / mass) * np.real(dkkq))
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p_temp = p[pos] - (np.real(gamma) * dkkq)
+        p[pos] = np.abs(p_temp) * np.sign(np.real(p_temp))
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
+
+@jit(nopython=True)
+def method4_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf): # rotate each component of dkk
+    dkkqx = dkkqx*np.exp(1.0j*.01)
+    dkkqy = dkkqy*np.exp(1.0j*.01)
+    dkkq = np.real(np.array([np.abs(dkkqx)*np.sign(np.real(dkkqx)),np.abs(dkkqy)*np.sign(np.real(dkkqy))]))
+    akkq = np.real((1 / (2 * mass)) * np.sum(np.conj(dkkq) * dkkq))
+    bkkq = np.sum((p[pos] / mass) * np.real(dkkq))
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p_temp = p[pos] - (np.real(gamma) * dkkq)
+        p[pos] = p_temp#np.abs(p_temp) * np.sign(np.real(p_temp))
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
+
+
+#@jit(nopython=True)
+def method5_rescale(dkkqx, dkkqy,r, p,pos,ev_diff,k,act_surf_ind,act_surf): # rotate after making z
+    w = 1
+    dkkqx = dkkqx
+    dkkqy = dkkqy
+    dkkq = np.array([dkkqx,dkkqy])
+    akkq = np.real((1 / (2 * mass)) * np.sum(np.conj(dkkq) * dkkq))
+    bkkq = np.sum((p[pos] / mass) * np.real(dkkq)) - np.sum(w*(r[pos]/mass) * np.imag(dkkq))
+    bkkq0 = np.sum((p[pos] / mass) * np.real(dkkq))
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    disc0 = np.real((bkkq0 ** 2) - 4 * (akkq) * ev_diff)
+    q0 = r[pos]
+    p0 = p[pos]
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+            gamma0 = bkkq + np.sqrt(disc0)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+            gamma0 = bkkq - np.sqrt(disc0)
+        if akkq == 0:
+            gamma = 0
+            gamma0 = 0
+        else:
+            gamma = np.real(gamma / (2 * (akkq)))
+            gamma0 = np.real(gamma0 / (2 * (akkq)))
+        pconv = 2*bkkq
+        if np.all(p0**2  - pconv >= 0):
+            p_plus = np.sqrt((p0 ** 2) - (2 * p0 * gamma * np.real(dkkq)) + gamma * (
+                    2 * q0 * w * np.imag(dkkq) + gamma * (np.real(dkkq) ** 2 + np.imag(dkkq) ** 2)))
+            p_minus = -np.sqrt((p0 ** 2) - (2 * p0 * gamma * np.real(dkkq)) + gamma * (
+                    2 * q0 * w * np.imag(dkkq) + gamma * (np.real(dkkq) ** 2 + np.imag(dkkq) ** 2)))
+            vec_plus_x = np.array([q0[0], p_plus[0]])
+            vec_plus_y = np.array([q0[1], p_plus[1]])
+            vec_minus_x = np.array([q0[0], p_minus[0]])
+            vec_minus_y = np.array([q0[1], p_minus[1]])
+            vec_0_x = np.array([(q0 + (1 / w) * gamma0 * np.imag(dkkq))[0], (p0 - gamma0 * np.real(dkkq))[0]])
+            vec_0_y = np.array([(q0 + (1 / w) * gamma0 * np.imag(dkkq))[1], (p0 - gamma0 * np.real(dkkq))[1]])
+            vec_0_x = vec_0_x / np.linalg.norm(vec_0_x)
+            vec_0_y = vec_0_y / np.linalg.norm(vec_0_y)
+            vec_plus_y = vec_plus_y / np.linalg.norm(vec_plus_y)
+            vec_plus_x = vec_plus_x / np.linalg.norm(vec_plus_x)
+            vec_minus_y = vec_minus_y / np.linalg.norm(vec_minus_y)
+            vec_minus_x = vec_minus_x / np.linalg.norm(vec_minus_x)
+            dot_x_plus = np.dot(vec_0_x, vec_plus_x)
+            if np.abs(dot_x_plus) > 1:
+                print(dot_x_plus)
+            dot_y_plus = np.dot(vec_0_y, vec_plus_y)
+            if np.abs(dot_y_plus) > 1:
+                print(dot_y_plus)
+            dot_x_minus = np.dot(vec_0_x, vec_minus_x)
+            if np.abs(dot_x_minus) > 1:
+                print(dot_x_minus)
+            dot_y_minus = np.dot(vec_0_y, vec_minus_y)
+            if np.abs(dot_y_minus) > 1:
+                print(dot_y_minus)
+            theta_x_plus = np.arccos(dot_x_plus)
+            theta_x_minus = np.arccos(dot_x_minus)
+            theta_y_plus = np.arccos(dot_y_plus)
+            theta_y_minus = np.arccos(dot_y_minus)
+            if theta_x_plus > theta_x_minus:
+                xfac = 1
+            else:
+                xfac = -1
+            if theta_y_plus > theta_y_minus:
+                yfac = 1
+            else:
+                yfac = -1
+
+            p_temp = np.sqrt(p0**2 - (2*p0*gamma*np.real(dkkq)) + gamma*(2*q0*w*np.imag(dkkq) + gamma*(np.real(dkkq)**2 + np.imag(dkkq)**2)))
+            p_temp[0] = p_temp[0] * xfac
+            p_temp[1] = p_temp[1] * yfac
+            #r_temp = r[pos] + (np.real(gamma/))
+            p[pos] = p_temp#np.abs(p_temp) * np.sign(np.real(p_temp))
+            act_surf_ind[pos] = k
+            act_surf[:, pos] = 0
+            act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
 
 @jit(nopython=True)
 def method2_analytical(dkkqx,dkkqy):
@@ -694,23 +848,14 @@ def new_hop(r,p,cg_db,act_surf,act_surf_ind):
                 ev_diff = -2*A
                 dkkqx = -1.0 * np.conj(dkkqx)
                 dkkqy = -1.0 * np.conj(dkkqy)
-            dkkq = method2(dkkqx, dkkqy)
-            akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
-            bkkq = np.sum((p[pos]/mass) * dkkq)
-            disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
-            if disc >= 0:
-                if bkkq < 0:
-                    gamma = bkkq + np.sqrt(disc)
-                else:
-                    gamma = bkkq - np.sqrt(disc)
-                if akkq == 0:
-                    gamma = 0
-                else:
-                    gamma = gamma / (2 * (akkq))
-                p[pos] = p[pos] - (np.real(gamma) * dkkq)
-                act_surf_ind[pos] = k
-                act_surf[:, pos] = 0
-                act_surf[act_surf_ind[pos], pos] = 1
+            if rescale_method==2:
+                p, act_surf, act_surf_ind = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
+            if rescale_method==3:
+                p, act_surf, act_surf_ind = method3_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
+            if rescale_method==4:
+                p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
+            if rescale_method==5:
+                p, act_surf, act_surf_ind = method5_rescale(dkkqx, dkkqy, r, p, pos, ev_diff, k, act_surf_ind, act_surf)
     return p, act_surf, act_surf_ind, cg_adb, cg_db
 
 #@jit(nopython=True)
@@ -802,8 +947,15 @@ def runSim():
             r_out[t_ind,:] = r
             dablist[t_ind] = np.real(np.sum(prod))
             t_ind += 1
-        F = np.zeros_like(r)
-        Fmag = get_Fmag(r,p,act_surf_ind)
+        F = np.zeros(np.shape(p))#get_F(state_db,r)
+        #norm_p_perp = np.zeros(np.shape(p))
+        #norm_p_perp[:,0] = p[:,1]/(np.linalg.norm(norm_p_perp,axis=1))
+        #norm_p_perp[:,1] = -p[:,0]/(np.linalg.norm(norm_p_perp,axis=1))
+        #new_fmag = np.zeros(np.shape(p))
+        #magnitude = np.einsum('ni,nj->n',F,norm_p_perp)
+        #new_fmag[:,0] = magnitude*norm_p_perp[:,0]
+        #new_fmag[:,1] = magnitude*norm_p_perp[:,1]
+        Fmag = get_Fmag(r,p,act_surf_ind)#nan_num2(new_fmag)#
         if not(include_fmag):
             Fmag *= 0
         r, p = prop_C(r, p, -F+Fmag, dt_bath)
@@ -874,6 +1026,10 @@ def genviz():
         py1_adb[t_ind] = py1_n_adb
         ec_db[t_ind] = (np.sum((1/(2*mass))*p**2))/num_points#get_E(state, r))/num_points
         eq_db[t_ind] =  get_E_adb(rho_adb,evals)/num_points
+    #plt.plot(tdat, eq_db - eq_db[0], label='eq')
+    #plt.plot(tdat, ec_db - ec_db[0], label='ec')
+    #plt.plot(tdat,ec_db - ec_db[0] + eq_db - eq_db[0])
+    #plt.show()
     fig = plt.figure(tight_layout=False, dpi=300)
     spec = gridspec.GridSpec(ncols=2, nrows=3, figure=fig)
     ax0 = fig.add_subplot(spec[0])
