@@ -578,6 +578,35 @@ def method5_rescale(dkkqx, dkkqy,r, p,pos,ev_diff,k,act_surf_ind,act_surf): # ro
             act_surf[act_surf_ind[pos], pos] = 1
     return p, act_surf, act_surf_ind
 
+def method6_rescale(dkkqx, dkkqy, p, q, pos,ev_diff,k,act_surf_ind,act_surf): #rescale both p and q !!!
+    dkkqx = dkkqx*np.exp(1.0j*.0)
+    dkkqy = dkkqy*np.exp(1.0j*.0)
+    dkkq = np.array([dkkqx, dkkqy])
+    dkkqr = np.real(dkkq)
+    dkkqi = np.imag(dkkq)
+    akkq = (1 / (2 * mass)) * np.sum(dkkqr * dkkqr)
+    w = 1
+    bkkq = np.sum((p[pos] / mass) * dkkqr) - (1/(mass * w))*np.sum(0*dkkqi)
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p_temp = p[pos] - (np.real(gamma) * dkkqr)
+        q_temp = q[pos] + (1/(mass*w))*np.real(gamma)*dkkqi
+        p[pos] = p_temp#np.abs(p_temp) * np.sign(np.real(p_temp))
+        q[pos] = q_temp
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, q, act_surf, act_surf_ind
+
+
 @jit(nopython=True)
 def method2_analytical(dkkqx,dkkqy):
     fac1 = np.real(2*dkkqx)**2
