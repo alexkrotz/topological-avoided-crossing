@@ -33,10 +33,18 @@ def erf_vec(a):
 def theta(x, y):
     return (np.pi / 2) * (erf_vec(B * x) + 1)  # (scipy.special.erf(B*x)+1)#
 
+@jit(nopython=True, fastmath=True)
+def Vc(x,y):
+    return A*(1-alpha*np.exp(-(B**2)*(x**2)))
+
+@jit(nopython=True, fastmath=True)
+def dVc(x,y):
+    return 2*A*(B**2)*x*alpha*np.exp(-(B**2)*(x**2))
+
 
 @jit(nopython=True, fastmath=True)
 def phi(x, y):
-    return W * y
+    return -1.0*W * y
 
 
 @jit(nopython=True, fastmath=True)
@@ -46,14 +54,14 @@ def dtheta(x, y):  # dtheta/dx
 
 @jit(nopython=True, fastmath=True)
 def dphi(x, y):  # dphi/dy
-    return W
+    return -1.0*W
 
 
 @jit(nopython=True, fastmath=True)
 def V(r):
     x = r[0]
     y = r[1]
-    out_mat = A * np.array([[-np.cos(theta(x, y)), np.sin(theta(x, y)) * np.exp(1.0j * phi(x, y))] \
+    out_mat = Vc(x,y) * np.array([[-np.cos(theta(x, y)), np.sin(theta(x, y)) * np.exp(1.0j * phi(x, y))] \
                                , [np.sin(theta(x, y)) * np.exp(-1.0j * phi(x, y)), np.cos(theta(x, y))]])
     return out_mat
 
@@ -63,10 +71,10 @@ def V_vec(r):
     x = r[:, 0]
     y = r[:, 1]
     out_mat = np.ascontiguousarray(np.zeros((2, 2, len(x)))) + 0.0j
-    out_mat[0, 0, :] = -np.cos(theta(x, y)) * A
-    out_mat[0, 1, :] = np.sin(theta(x, y)) * np.exp(1.0j * phi(x, y)) * A
-    out_mat[1, 0, :] = np.sin(theta(x, y)) * np.exp(-1.0j * phi(x, y)) * A
-    out_mat[1, 1, :] = np.cos(theta(x, y)) * A
+    out_mat[0, 0, :] = -np.cos(theta(x, y)) * Vc(x,y)
+    out_mat[0, 1, :] = np.sin(theta(x, y)) * np.exp(1.0j * phi(x, y)) * Vc(x,y)
+    out_mat[1, 0, :] = np.sin(theta(x, y)) * np.exp(-1.0j * phi(x, y)) * Vc(x,y)
+    out_mat[1, 1, :] = np.cos(theta(x, y)) * Vc(x,y)
     return out_mat
 
 
@@ -91,10 +99,10 @@ def dVx(r):
     x = r[0]
     y = r[1]
     out_mat = np.ascontiguousarray(np.zeros((2, 2))) + 0.0j
-    out_mat[0, 0] = np.sin(theta(x, y)) * dtheta(x, y) * A
-    out_mat[0, 1] = np.exp(1.0j * phi(x, y)) * np.cos(theta(x, y)) * dtheta(x, y) * A
-    out_mat[1, 0] = np.exp(-1.0j * phi(x, y)) * np.cos(theta(x, y)) * dtheta(x, y) * A
-    out_mat[1, 1] = -np.sin(theta(x, y)) * dtheta(x, y) * A
+    out_mat[0, 0] = -np.cos(theta(x,y))*dVc(x,y)+np.sin(theta(x,y))*Vc(x,y)*dtheta(x,y)
+    out_mat[0, 1] = np.exp(1.0j * phi(x, y)) * (np.cos(theta(x, y)) * dtheta(x, y) * Vc(x,y) + np.sin(theta(x,y))*dVc(x,y))
+    out_mat[1, 0] = np.exp(-1.0j * phi(x, y)) * (np.cos(theta(x, y)) * dtheta(x, y) * Vc(x,y) + np.sin(theta(x,y))*dVc(x,y))
+    out_mat[1, 1] = np.cos(theta(x,y))*dVc(x,y)-np.sin(theta(x,y))*Vc(x,y)*dtheta(x,y)
     return out_mat
 
 @jit(nopython=True, fastmath=True)
@@ -102,8 +110,8 @@ def dVy(r):
     x = r[0]
     y = r[1]
     out_mat = np.ascontiguousarray(np.zeros((2, 2))) + 0.0j
-    out_mat[0, 1] = 1.0j * np.exp(1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * A
-    out_mat[1, 0] = -1.0j * np.exp(-1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * A
+    out_mat[0, 1] = 1.0j * np.exp(1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * Vc(x,y)
+    out_mat[1, 0] = -1.0j * np.exp(-1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * Vc(x,y)
     return out_mat
 
 @jit(nopython=True, fastmath=True)
@@ -111,10 +119,12 @@ def dVx_vec(r):
     x = r[:, 0]
     y = r[:, 1]
     out_mat = np.ascontiguousarray(np.zeros((2, 2, len(x)))) + 0.0j
-    out_mat[0, 0, :] = np.sin(theta(x, y)) * dtheta(x, y) * A
-    out_mat[0, 1, :] = np.exp(1.0j * phi(x, y)) * np.cos(theta(x, y)) * dtheta(x, y) * A
-    out_mat[1, 0, :] = np.exp(-1.0j * phi(x, y)) * np.cos(theta(x, y)) * dtheta(x, y) * A
-    out_mat[1, 1, :] = -np.sin(theta(x, y)) * dtheta(x, y) * A
+    out_mat[0, 0, :] = -np.cos(theta(x, y)) * dVc(x, y) + np.sin(theta(x, y)) * Vc(x, y) * dtheta(x, y)
+    out_mat[0, 1, :] = np.exp(1.0j * phi(x, y)) * (
+                np.cos(theta(x, y)) * dtheta(x, y) * Vc(x, y) + np.sin(theta(x, y)) * dVc(x, y))
+    out_mat[1, 0, :] = np.exp(-1.0j * phi(x, y)) * (
+                np.cos(theta(x, y)) * dtheta(x, y) * Vc(x, y) + np.sin(theta(x, y)) * dVc(x, y))
+    out_mat[1, 1, :] = np.cos(theta(x, y)) * dVc(x, y) - np.sin(theta(x, y)) * Vc(x, y) * dtheta(x, y)
     return out_mat
 
 
@@ -123,8 +133,8 @@ def dVy_vec(r):
     x = r[:, 0]
     y = r[:, 1]
     out_mat = np.ascontiguousarray(np.zeros((2, 2, len(x)))) + 0.0j
-    out_mat[0, 1, :] = 1.0j * np.exp(1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * A
-    out_mat[1, 0, :] = -1.0j * np.exp(-1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * A
+    out_mat[0, 1, :] = 1.0j * np.exp(1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * Vc(x,y)
+    out_mat[1, 0, :] = -1.0j * np.exp(-1.0j * phi(x, y)) * np.sin(theta(x, y)) * dphi(x, y) * Vc(x,y)
     return out_mat
 
 
@@ -153,10 +163,10 @@ def get_Fmag(r,p,act_surf_ind):
     py = p[:,1]
     rx = r[:,0]
     ry = r[:,1]
-    f1x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-py)
-    f1y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (px)
-    f0x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (py)
-    f0y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-px)
+    f1x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (py)
+    f1y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-px)
+    f0x = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (-py)
+    f0y = (hbar / (2 * mass)) * dtheta(rx, ry) * dphi(rx, ry) * np.sin(theta(rx, ry)) * (px)
     out = np.zeros_like(p)
     pos0 = np.where(act_surf_ind == 0)
     pos1 = np.where(act_surf_ind == 1)
@@ -320,16 +330,16 @@ def get_evecs_analytical(r):
     y = r[:,1]
     evec_0 = np.ascontiguousarray(np.zeros((2,len(r))))+0.0j
     evec_1 = np.ascontiguousarray(np.zeros((2, len(r)))) + 0.0j
-    evec_0[0,:] = np.cos(theta(x,y)/2)*np.exp(1.0j*phi(x,y))#nan_num(-np.exp(1.0j*phi(x,y))*np.cos(theta(x,y)/2)/np.sin(theta(x,y)/2))#np.array([,])
+    evec_0[0,:] = np.cos(theta(x,y)/2)*np.exp(-1.0j*phi(x,y))#nan_num(-np.exp(1.0j*phi(x,y))*np.cos(theta(x,y)/2)/np.sin(theta(x,y)/2))#np.array([,])
     evec_0[1,:] = -np.sin(theta(x,y)/2)#1#
-    evec_1[0,:] = np.sin(theta(x,y)/2)*np.exp(1.0j*phi(x,y))#nan_num(np.exp(1.0j*phi(x,y))*np.sin(theta(x,y)/2)/np.cos(theta(x,y)/2))#
+    evec_1[0,:] = np.sin(theta(x,y)/2)*np.exp(-1.0j*phi(x,y))#nan_num(np.exp(1.0j*phi(x,y))*np.sin(theta(x,y)/2)/np.cos(theta(x,y)/2))#
     evec_1[1,:] = np.cos(theta(x,y)/2)#1#
     evecs_out = np.ascontiguousarray(np.zeros((2,2,len(r))))+0.0j
     evals_out = np.zeros((2,len(r)))
     evecs_out[:,1,:] = evec_1
     evecs_out[:,0,:] = evec_0
-    evals_out[0,:] = -A
-    evals_out[1,:] = A
+    evals_out[0,:] = -Vc(x,y)
+    evals_out[1,:] = Vc(x,y)
     return evals_out, evecs_out
 
 
