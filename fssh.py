@@ -165,6 +165,12 @@ def get_Fmag(r,p,act_surf_ind):
     out[pos1,0] = f1x[pos1]
     out[pos1,1] = f1y[pos1]
     return out
+def get_Fmag2(r,p,act_surf_ind,p_prev,dt):
+    dt_p = (1/dt)*((1/p) - (1/p_prev))
+    px = p[:,0]
+    py = p[:,1]
+    dkk = get_dkk_analytical()
+    F_out = -1.0j*hbar * (np.linalg.norm(p,axis=1)/mass) * dt_p
 def get_dkk(evec_j, evec_k, ev_diff, dvmat):
     return np.matmul(np.transpose(np.conj(evec_j)),np.matmul(dvmat,evec_k))/ev_diff
 
@@ -340,6 +346,21 @@ def get_dkk_analytical(r):
     dkkx = (1/2)*dtheta(x,y)
     dkky = (1.0j/2)*np.sin(theta(x,y))*dphi(x,y)
     return dkkx, dkky
+
+@jit(nopython=True,fastmath=True)
+def d11(r):
+    x = r[:,0]
+    y = r[:,1]
+    d11_out = np.ascontiguousarray(np.zeros(np.shape(r)))+0.0j
+    d11_out[:,1] = 1.0j*(np.cos(theta(x,y)/2)**2)*dphi(x,y)
+    return d11_out
+@jit(nopython=True,fastmath=True)
+def d00(r):
+    x = r[:,0]
+    y = r[:,1]
+    d00_out = np.ascontiguousarray(np.zeros(np.shape(r)))+0.0jr
+    d00_out[:,1] = 1.0j*(np.sin(theta(x,y)/2)**2)*dphi(x,y)
+
 @jit(nopython=True,fastmath=True)
 def get_dkk_analytical2(r):
     x = r[0]

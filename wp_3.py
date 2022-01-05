@@ -28,11 +28,12 @@ def theta(x, y):
 
 @jit(nopython=True, fastmath=True)
 def Vc(x,y):
-    return A*(1-alpha*np.exp(-(B**2)*(x**2)))
+    return A*(1-alpha*np.exp(-(B**2)*(x**2 + y**2)))
+
 
 @jit(nopython=True, fastmath=True)
 def phi(x, y):
-    return -1.0*W * y
+    return W * y
 
 
 @jit(nopython=True, fastmath=True)
@@ -42,7 +43,7 @@ def dtheta(x, y):  # dtheta/dx
 
 @jit(nopython=True, fastmath=True)
 def dphi(x, y):  # dphi/dy
-    return -1.0*W
+    return W
 
 
 @jit(nopython=True, fastmath=True)
