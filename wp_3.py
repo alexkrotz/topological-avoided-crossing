@@ -267,8 +267,8 @@ def genviz():
     for t_ind in tqdm(range(np.shape(psi)[0])):
         num = '{0:0>3}'.format(t_ind)
         state = psi[t_ind]
-        print('Writing image: ',calcdir+'/images/state_'+str(num)+'.png')
-        plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
+        #print('Writing image: ',calcdir+'/images/state_'+str(num)+'.png')
+        #plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.abs(state[0]) ** 2)
         pop_db_1[t_ind] = np.sum(np.abs(state[1]) ** 2)
         state_vec_adb = get_psi_adb(state)

@@ -93,7 +93,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, 'inputfile.tmp')
-                                    from wp_2 import runSim, genviz
+                                    from wp_3 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
