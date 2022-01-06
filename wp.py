@@ -8,7 +8,11 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-with open('inputfile.tmp') as f:
+import glob
+
+num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
+with open(tmpfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')

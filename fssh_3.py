@@ -8,9 +8,11 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import glob
 
-
-with open('inputfile.tmp') as f:
+num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
+with open(tmpfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')
@@ -31,11 +33,11 @@ def erf_vec(a):
 
 @jit(nopython=True, fastmath=True)
 def theta(x, y):
-    return (np.pi / 2) * (erf_vec(B * x) + 1)  # (scipy.special.erf(B*x)+1)#
+    return (np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
 
 @jit(nopython=True, fastmath=True)
 def Vc(x,y):
-    return A*(1-alpha*np.exp(-(B**2)*(x**2 + y**2)))
+    return A*(1-alpha*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))))
 
 
 @jit(nopython=True, fastmath=True)
@@ -45,7 +47,7 @@ def phi(x, y):
 
 @jit(nopython=True, fastmath=True)
 def dtheta(x, y):  # dtheta/dx
-    return (B * np.exp(-1.0 * (B ** 2) * (x ** 2)) * np.sqrt(np.pi))
+    return (Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
 
 
 @jit(nopython=True, fastmath=True)
@@ -153,8 +155,8 @@ def get_quantumForce(act_surf_ind,r): #if act_surf_ind == 0, return -F1, act_sur
     y = r[:,1]
     fact = (act_surf_ind * 2)-1
     F1 = np.zeros(np.shape(r))
-    F1[:,0] = 2*A*alpha*(B**2)*np.exp(-(B**2)*(x**2 + y**2)) * x * fact
-    F1[:,1] = 2*A*alpha*(B**2)*np.exp(-(B**2)*(x**2 + y**2)) * y * fact
+    F1[:,0] = 2*A*alpha*(Bx**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * x * fact
+    F1[:,1] = 2*A*alpha*(By**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * y * fact
     return F1
 
 def get_Fmag(r,p,act_surf_ind):
@@ -290,7 +292,7 @@ def plot_state(r, state, filename):
     #H0 = np.flip(H0,axis=0)
     #xcenters=(xedges[:-1] + xedges[1:])/2
     #ycenters=(yedges[:-1] + yedges[1:])/2
-    ax0.imshow(H0,interpolation='bilinear', vmin=0, vmax = global_max)
+    ax0.imshow(H0,interpolation='bilinear', vmin=0, vmax = max0)#global_max)
     #im0 = NonUniformImage(ax0, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
     #ax0.set_xlim([-5,5])
     #ax0.set_ylim([-5,5])
@@ -303,7 +305,7 @@ def plot_state(r, state, filename):
     #im1 = NonUniformImage(ax1, interpolation='bilinear', extent=(-5, 5, -5, 5), cmap='viridis')
     #ax1.set_xlim([-5,5])
     #ax1.set_ylim([-5,5])
-    ax1.imshow(H1,interpolation='bilinear',vmin=0,vmax=global_max)
+    ax1.imshow(H1,interpolation='bilinear',vmin=0,vmax=max1)#global_max)
     #im1.set_data(xcenters,ycenters,H1)
     #ax1.images.append(im1)
     plt.savefig(filename)
@@ -488,6 +490,8 @@ def method4_rescale(dkkqx, dkkqy, F, p, pos,ev_diff,k,act_surf_ind,act_surf): # 
         new_angle = -1.0*np.arctan(num/den)
     if not(F_zero):
         dkkq = dkkq * np.exp(1.0j*new_angle)
+        if np.abs(np.dot(np.imag(dkkq),F)) > 1E-15:
+            print('ERROR theta: ',np.dot(np.imag(dkkq),F))
     if F_zero:
         phase_x = np.conj(dkkqx / np.abs(dkkqx))
         dkkqx = dkkqx * phase_x
@@ -549,7 +553,7 @@ def get_cgadb_act(cg_adb,act_surf_ind):
 
 
 #@jit(nopython=True)
-def hop(r,p,F,Fmag,cg_db,act_surf,act_surf_ind):
+def hop(r,p,F,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
     evals, evecs = get_evecs_analytical(r)
     evals_exp = np.exp(-1.0j * evals * dt_bath)
     state_adb_t0 = vec_db_to_adb(cg_db, evecs)
@@ -596,7 +600,7 @@ def hop(r,p,F,Fmag,cg_db,act_surf,act_surf_ind):
             if rescale_method==3:
                 p, act_surf, act_surf_ind = method3_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
             if rescale_method==4:
-                p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, F[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
+                p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, F_beta[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
             if rescale_method==4.5:
                 p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, (Fmag)[pos], p, pos, ev_diff, k, act_surf_ind,
                                                             act_surf)
@@ -642,6 +646,7 @@ def runSim():
             dablist[t_ind] = np.real(np.sum(prod))
             t_ind += 1
         F = get_quantumForce(act_surf_ind,r)#np.zeros(np.shape(p))#get_F(state_db,r)
+        F_beta = get_quantumForce(np.abs(act_surf_ind-1),r)
         #norm_p_perp = np.zeros(np.shape(p))
         #norm_p_perp[:,0] = p[:,1]/(np.linalg.norm(norm_p_perp,axis=1))
         #norm_p_perp[:,1] = -p[:,0]/(np.linalg.norm(norm_p_perp,axis=1))
@@ -657,7 +662,7 @@ def runSim():
             Ftot = F #+ Fmag
         r, p = prop_C(r, p, -F+Fmag, dt_bath)
 
-        r, p, act_surf, act_surf_ind, state_adb, state_db = hop(r, p, F, Fmag, state_db, act_surf, act_surf_ind)
+        r, p, act_surf, act_surf_ind, state_adb, state_db = hop(r, p, F, F_beta, Fmag, state_db, act_surf, act_surf_ind)
     np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
     np.save(calcdir + '/tdat.npy',tdat)
     np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
@@ -706,7 +711,7 @@ def genviz():
         rho_adb = rho_adb_out[t_ind]
         evals, evecs = get_evecs_analytical(r)
         rho_db = rho_adb_to_db(rho_adb,evecs)
-        #num = '{0:0>3}'.format(t_ind)
+        num = '{0:0>3}'.format(t_ind)
         #plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,:]))/num_points
         pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,:]))/num_points

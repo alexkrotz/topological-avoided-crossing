@@ -8,7 +8,11 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-with open('inputfile.tmp') as f:
+import glob
+
+num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
+with open(tmpfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')
@@ -24,11 +28,11 @@ def erf_vec(a):
 
 @jit(nopython=True, fastmath=True)
 def theta(x, y):
-    return (np.pi / 2) * (erf_vec(B * x) + 1)  # (scipy.special.erf(B*x)+1)#
+    return (np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
 
 @jit(nopython=True, fastmath=True)
 def Vc(x,y):
-    return A*(1-alpha*np.exp(-(B**2)*(x**2 + y**2)))
+    return A*(1-alpha*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))))
 
 
 @jit(nopython=True, fastmath=True)
@@ -38,7 +42,7 @@ def phi(x, y):
 
 @jit(nopython=True, fastmath=True)
 def dtheta(x, y):  # dtheta/dx
-    return (B * np.exp(-1.0 * (B ** 2) * (x ** 2)) * np.sqrt(np.pi))
+    return (Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
 
 
 @jit(nopython=True, fastmath=True)
@@ -267,8 +271,8 @@ def genviz():
     for t_ind in tqdm(range(np.shape(psi)[0])):
         num = '{0:0>3}'.format(t_ind)
         state = psi[t_ind]
-        #print('Writing image: ',calcdir+'/images/state_'+str(num)+'.png')
-        #plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
+        print('Writing image: ',calcdir+'/images/state_'+str(num)+'.png')
+        plot_state(state, calcdir+'/images/state_' + str(num) + '.png')
         pop_db_0[t_ind] = np.sum(np.abs(state[0]) ** 2)
         pop_db_1[t_ind] = np.sum(np.abs(state[1]) ** 2)
         state_vec_adb = get_psi_adb(state)

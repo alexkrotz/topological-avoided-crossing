@@ -8,9 +8,11 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import glob
 
-
-with open('inputfile.tmp') as f:
+num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
+with open(tmpfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')
@@ -358,7 +360,7 @@ def d11(r):
 def d00(r):
     x = r[:,0]
     y = r[:,1]
-    d00_out = np.ascontiguousarray(np.zeros(np.shape(r)))+0.0jr
+    d00_out = np.ascontiguousarray(np.zeros(np.shape(r)))+0.0j
     d00_out[:,1] = 1.0j*(np.sin(theta(x,y)/2)**2)*dphi(x,y)
 
 @jit(nopython=True,fastmath=True)
