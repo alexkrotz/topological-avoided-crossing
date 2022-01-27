@@ -39,6 +39,31 @@ def theta(x, y):
 def Vc(x,y):
     return A*(1-alpha*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))))
 
+@jit(nopython=True, fastmath=True)
+def d1xVc(x,y):
+    return 2 * A * alpha * x * (Bx**2) * np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2)))
+
+@jit(nopython=True, fastmath=True)
+def d1yVc(x,y):
+    return 2 * A * alpha * y * (By**2) * np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2)))
+
+@jit(nopython=True, fastmath=True)
+def d2xVc(x,y):
+    return 2 * A * alpha * (Bx**2) * np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * (1 - (2 * (Bx**2) * x**2))
+
+@jit(nopython=True, fastmath=True)
+def d2yVc(x,y):
+    return 2 * A * alpha * (By**2) * np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * (1 - (2 * (By**2) * y**2))
+
+@jit(nopython=True, fastmath=True)
+def d3xVc(x,y):
+    return 4*A*alpha*(Bx**4)*x*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2)))*(-3 + (2*(Bx**2)*(x**2)))
+
+@jit(nopython=True, fastmath=True)
+def d3yVc(x,y):
+    return 4*A*alpha*(By**4)*y*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2)))*(-3 + (2*(By**2)*(y**2)))
+
+
 
 @jit(nopython=True, fastmath=True)
 def phi(x, y):
@@ -49,12 +74,17 @@ def phi(x, y):
 def dtheta(x, y):  # dtheta/dx
     return (Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
 
+@jit(nopython=True, fastmath=True)
+def d2theta(x,y):
+    return -2*(Bx**3)*np.sqrt(np.pi)*x*np.exp(-(Bx**2)*(x**2))
 
 @jit(nopython=True, fastmath=True)
 def dphi(x, y):  # dphi/dy
     return W
 
-
+@jit(nopython=True, fastmath=True)
+def d2phi(x,y):
+    return 0
 
 
 
@@ -149,6 +179,16 @@ def get_F(state_vec, r):
     out[:,0] = np.real(Fx)
     out[:,1] = np.real(Fy)
     return out#np.real(np.transpose(np.array([Fx, Fy])))
+
+@jit(nopython=True)
+def get_Falpha(state_vec, r):
+    Fx = matprod(state_vec, dVx_vec(r))
+    Fy = matprod(state_vec, dVy_vec(r))
+    out = np.zeros((len(Fx),2))
+    out[:,0] = np.real(Fx)
+    out[:,1] = np.real(Fy)
+    return out#np.real(np.transpose(np.array([Fx, Fy])))
+
 @jit(nopython=True)
 def get_quantumForce(act_surf_ind,r): #if act_surf_ind == 0, return -F1, act_surf_ind == 1 return F1
     x = r[:,0]
@@ -158,6 +198,36 @@ def get_quantumForce(act_surf_ind,r): #if act_surf_ind == 0, return -F1, act_sur
     F1[:,0] = 2*A*alpha*(Bx**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * x * fact
     F1[:,1] = 2*A*alpha*(By**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * y * fact
     return F1
+
+@jit(nopython=True)
+def get_quantumForceMOD(act_surf_ind,r): #if act_surf_ind == 0, return -F1, act_surf_ind == 1 return F1
+    x = r[:,0]
+    y = r[:,1]
+    fact = (act_surf_ind * 2)-1
+    F1 = np.zeros(np.shape(r))
+    F1[:,0] = 2*A*(0.01)*(Bx**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * x * fact
+    F1[:,1] = 2*A*(0.01)*(By**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * y * fact
+    return F1
+
+@jit(nopython=True)
+def get_G(act_surf_ind, r):
+    x = r[:,0]
+    y = r[:,1]
+    fact = (act_surf_ind * 2) - 1
+    G1 = np.zeros(np.shape(r))
+    G1[:,0] = (-Vc(x,y)*(dtheta(x,y)**2) + d2xVc(x,y)) * fact
+    G1[:,1] = ((-np.sin(theta(x,y))**2)*Vc(x,y)*(dphi(x,y)**2) + d2yVc(x,y)) * fact
+    return G1
+
+@jit(nopython=True)
+def get_H(act_surf_ind, r):
+    x = r[:,0]
+    y = r[:,1]
+    fact = (act_surf_ind * 2) - 1
+    H1 = np.zeros(np.shape(r))
+    H1[:,0] = fact * -1.0*(3*dtheta(x,y)*(Vc(x,y)*d2theta(x,y) + dtheta(x,y)*d1xVc(x,y)) - d3xVc(x,y))
+    H1[:,1] = fact * -1.0*(3*(np.sin(theta(x,y))**2)*dphi(x,y)*(Vc(x,y)*d2phi(x,y) + dphi(x,y)*d1yVc(x,y)) - d3yVc(x,y))
+    return H1
 
 def get_Fmag(r,p,act_surf_ind):
     px = p[:,0]
@@ -260,24 +330,21 @@ def wigner_vec(r, p):
 
 num_points = N
 
-def get_p(state, p, N):
-    px0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 0] / N) / np.sum((np.abs(state[0]) ** 2) / N))
-    py0 = np.real(np.sum(np.abs(state[0]) ** 2 * p[:, 1] / N) / np.sum((np.abs(state[0]) ** 2) / N))
-    px1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 0] / N) / np.sum((np.abs(state[1]) ** 2) / N))
-    py1 = np.real(np.sum(np.abs(state[1]) ** 2 * p[:, 1] / N) / np.sum((np.abs(state[1]) ** 2) / N))
-    return px0, py0, px1, py1
+
+r_min = 1.0
 
 
-def get_p_rho(rho, p, N):
-    px0 = np.real(np.sum(rho[0, 0, :] * p[:, 0] / N) / np.sum(rho[0, 0, :] / N))
-    py0 = np.real(np.sum(rho[0, 0, :] * p[:, 1] / N) / np.sum(rho[0, 0, :] / N))
-    px1 = np.real(np.sum(rho[1, 1, :] * p[:, 0] / N) / np.sum(rho[1, 1, :] / N))
-    py1 = np.real(np.sum(rho[1, 1, :] * p[:, 1] / N) / np.sum(rho[1, 1, :] / N))
+def get_p_rho(rho, p, r, N):
+    rtrans_ind = np.arange(len(r),dtype=int)[r[:, 0] > r_min]
+    px0 = np.real(np.sum(rho[0, 0, rtrans_ind] * p[rtrans_ind, 0] / N) / np.sum(rho[0, 0, rtrans_ind] / N))
+    py0 = np.real(np.sum(rho[0, 0, rtrans_ind] * p[rtrans_ind, 1] / N) / np.sum(rho[0, 0, rtrans_ind] / N))
+    px1 = np.real(np.sum(rho[1, 1, rtrans_ind] * p[rtrans_ind, 0] / N) / np.sum(rho[1, 1, rtrans_ind] / N))
+    py1 = np.real(np.sum(rho[1, 1, rtrans_ind] * p[rtrans_ind, 1] / N) / np.sum(rho[1, 1, rtrans_ind] / N))
     return px0, py0, px1, py1
 
 def plot_state(r, state, filename):
-    xedges = np.linspace(-5,5,100,endpoint=True)
-    yedges = np.linspace(-5,5,100,endpoint=True)
+    xedges = np.linspace(-10,25,100,endpoint=True)
+    yedges = np.linspace(-15,15,100,endpoint=True)
     pop_0 = np.real(state[0,0,:])#np.abs(state[0])**2
     pop_1 = np.real(state[1,1,:])#np.abs(state[1])**2
     fig = plt.figure(tight_layout=False,dpi=100)
@@ -424,9 +491,9 @@ def nan_num2(num):
 
 @jit(nopython=True)
 def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf):
-    phase_x = np.conj(dkkqx/np.abs(dkkqx))
-    dkkqx = dkkqx * phase_x
-    dkkqy = dkkqy * phase_x
+    #phase_x = np.conj(dkkqx/np.abs(dkkqx))
+    #dkkqx = dkkqx * phase_x
+    #dkkqy = dkkqy * phase_x
     fac1 = np.real(2*dkkqx)**2
     fac2 = np.real(-1.0j*2*dkkqy)**2
     if fac1 > fac2:
@@ -474,34 +541,67 @@ def method3_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf): # resc
         act_surf[act_surf_ind[pos], pos] = 1
     return p, act_surf, act_surf_ind
 
-#@jit(nopython=True)
-def method4_rescale(dkkqx, dkkqy, F, p, pos,ev_diff,k,act_surf_ind,act_surf): # find preferred gauge orthogonal to Fmag then take real part
+@jit(nopython=True)
+def func(phi, a, b, c, d, e):
+    return np.abs(a * np.sin(phi) + b * np.cos(phi) + 0.5 *( c * (np.sin(phi) ** 2) + d * (np.sin(phi) * np.cos(phi)) + e * (
+                np.cos(phi) ** 2)))
+
+@jit(nopython=True)
+def func_h(phi, a, b, c, d):
+    return np.abs(a*(np.cos(phi)**3) + b*((np.cos(phi)**2)*np.sin(phi)) + c*(np.cos(phi)*(np.sin(phi)**2)) + d*(np.sin(phi)**3))
+
+
+def method4H_rescale(dkkqx, dkkqy, F, H_beta, p, pos,ev_diff,k,act_surf_ind,act_surf): # find preferred gauge orthogonal to Fmag then take real part
     dkkq = np.array([dkkqx,dkkqy])
-    num = np.dot(np.imag(dkkq), F)
-    den = np.dot(np.real(dkkq), F)
+    H_zero = False
+    if np.linalg.norm(H_beta) == 0:
+        H_zero = True
     F_zero = False
     if np.linalg.norm(F) == 0:
         F_zero = True
-    if num==0 and not(F_zero):
-        new_angle = 0
-    if num!=0 and den==0 and not(F_zero):
-        new_angle = np.pi/2
-    if num!=0 and den!=0 and not(F_zero):
-        new_angle = -1.0*np.arctan(num/den)
     if not(F_zero):
-        dkkq = dkkq * np.exp(1.0j*new_angle)
-        if np.abs(np.dot(np.imag(dkkq),F)) > 1E-15:
-            print('ERROR theta: ',np.dot(np.imag(dkkq),F))
-    if F_zero:
-        phase_x = np.conj(dkkqx / np.abs(dkkqx))
-        dkkqx = dkkqx * phase_x
-        dkkqy = dkkqy * phase_x
+        H_zero = True
+    if F_zero and not(H_zero):
+        a = np.dot(np.imag(dkkq)**3, H_beta)
+        b = 3 * np.dot(np.imag(dkkq)**2 * np.real(dkkq),H_beta)
+        c = 3 * np.dot(np.imag(dkkq) * np.real(dkkq)**2, H_beta)
+        d = np.dot(np.real(dkkq)**3, H_beta)
+        ran = np.arange(-np.pi, np.pi, 1E-3)
+        minpos = np.argmin(func_h(ran, a, b, c, d))
+        minphi = ran[minpos]
+        minphi_p1 = minphi + 1E-3
+        minphi_m1 = minphi - 1E-3
+        ran = np.arange(minphi_m1, minphi_p1, 1E-6)
+        minpos = np.argmin(func_h(ran, a, b, c, d))
+        minphi = ran[minpos]
+        minphi_p1 = minphi + 1E-6
+        minphi_m1 = minphi - 1E-6
+        ran = np.arange(minphi_m1, minphi_p1, 1E-9)
+        minpos = np.argmin(func_h(ran, a, b, c, d))
+        new_angle = ran[minpos]
+        dkkq = dkkq * np.exp(1.0j * new_angle)
+        if np.abs(func_h(new_angle,a,b,c,d)) > 1E-15:
+            print('Error minalg: ',func_h(new_angle,a,b,c,d))
+    if F_zero and H_zero:
+        print('Resorting to method 2')
         fac1 = np.real(2 * dkkqx) ** 2
         fac2 = np.real(-1.0j * 2 * dkkqy) ** 2
         if fac1 > fac2:
             dkkq = np.array([1, 0])
         else:
             dkkq = np.array([0, 1])
+    if not(F_zero) and H_zero:
+        num = np.dot(np.imag(dkkq), F)
+        den = np.dot(np.real(dkkq), F)
+        if num == 0:
+            new_angle = 0
+        if num != 0 and den == 0:
+            new_angle = np.pi / 2
+        if num != 0 and den != 0:
+            new_angle = -1.0 * np.arctan(num / den)
+        dkkq = dkkq * np.exp(1.0j * new_angle)
+        if np.abs(np.dot(np.imag(dkkq), F)) > 1E-15:
+            print('ERROR theta: ', np.dot(np.imag(dkkq), F))
     dkkqr = np.real(dkkq)
     akkq = (1 / (2 * mass)) * np.sum(dkkqr * dkkqr)
     bkkq = np.sum((p[pos] / mass) * dkkqr)
@@ -521,6 +621,101 @@ def method4_rescale(dkkqx, dkkqy, F, p, pos,ev_diff,k,act_surf_ind,act_surf): # 
         act_surf[:, pos] = 0
         act_surf[act_surf_ind[pos], pos] = 1
     return p, act_surf, act_surf_ind
+#@jit(nopython=True)
+def method4_rescale(dkkqx, dkkqy, F,Fmod, G_beta, p, pos,ev_diff,k,act_surf_ind,act_surf): # find preferred gauge orthogonal to Fmag then take real part
+    dkkq = np.array([dkkqx,dkkqy])
+    G_zero = False
+    if np.linalg.norm(G_beta) == 0:
+        G_zero = True
+    F_zero = False
+    if np.linalg.norm(F) == 0:
+        #F_zero = True
+        F = Fmod
+        F_zero = False
+    if not(F_zero):
+        G_zero = True
+    if F_zero and not(G_zero):
+        c = np.dot(np.real(dkkq)**2,G_beta)
+        d = 2*np.dot(np.real(dkkq)*np.imag(dkkq),G_beta)
+        e = np.dot(np.imag(dkkq)**2,G_beta)
+        new_angle = np.real((-1.0j/2)*np.log((c -1.0j*d - e)/(np.sqrt((d**2) + (c-e)**2))))
+        dkkq = dkkq * np.exp(1.0j*new_angle)
+        if np.abs(d * np.cos(2*new_angle) + (c-e)*np.sin(2*new_angle)) > 1E-14:
+            print('ERROR not min G',np.abs(d * np.cos(2*new_angle) + (c-e)*np.sin(2*new_angle)) )
+        if 2*(c-e)*np.cos(2*new_angle)-2*d*np.sin(2*new_angle) < 0:
+            print('ERROR found max not min')
+    if F_zero and G_zero:
+        print('Resorting to method 2')
+        fac1 = np.real(2 * dkkqx) ** 2
+        fac2 = np.real(-1.0j * 2 * dkkqy) ** 2
+        if fac1 > fac2:
+            dkkq = np.array([1, 0])
+        else:
+            dkkq = np.array([0, 1])
+    if not(F_zero) and G_zero:
+        num = np.dot(np.imag(dkkq), F)
+        den = np.dot(np.real(dkkq), F)
+        if num == 0:
+            new_angle = 0
+        if num != 0 and den == 0:
+            new_angle = np.pi / 2
+        if num != 0 and den != 0:
+            new_angle = -1.0 * np.arctan(num / den)
+        dkkq = dkkq * np.exp(1.0j * new_angle)
+        if np.abs(np.dot(np.imag(dkkq), F)) > 1E-15:
+            print('ERROR theta: ', np.dot(np.imag(dkkq), F))
+    dkkqr = np.real(dkkq)
+    akkq = (1 / (2 * mass)) * np.sum(dkkqr * dkkqr)
+    bkkq = np.sum((p[pos] / mass) * dkkqr)
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p_temp = p[pos] - (np.real(gamma) * dkkqr)
+        p[pos] = p_temp#np.abs(p_temp) * np.sign(np.real(p_temp))
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
+def get_theta(r,act_surf):
+    num = (By**2)*np.exp(Bx**2 * r[0]**2)*W*r[1]*np.cos((np.pi/2)*erf_vec(Bx*r[0]))
+    den = (Bx**3)*np.sqrt(np.pi)*r[0]
+    fac = 2*act_surf - 1
+    if den == 0:
+        angle = np.pi/2
+    else:
+        angle = fac*np.arctan(num/den)
+    return angle
+def method4_rescale_analytical(dkkqx, dkkqy,r, p, pos,ev_diff,k,act_surf_ind,act_surf): # find preferred gauge orthogonal to Fmag then take real part
+    dkkq = np.array([dkkqx,dkkqy])
+    theta_analytical = get_theta(r,act_surf_ind[pos])
+    dkkq = dkkq * np.exp(1.0j * theta_analytical)
+    dkkqr = np.real(dkkq)
+    akkq = (1 / (2 * mass)) * np.sum(dkkqr * dkkqr)
+    bkkq = np.sum((p[pos] / mass) * dkkqr)
+    disc = np.real((bkkq ** 2) - 4 * (akkq) * ev_diff)
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p_temp = p[pos] - (np.real(gamma) * dkkqr)
+        p[pos] = p_temp#np.abs(p_temp) * np.sign(np.real(p_temp))
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+    return p, act_surf, act_surf_ind
+
 
 
 @jit(nopython=True)
@@ -553,7 +748,7 @@ def get_cgadb_act(cg_adb,act_surf_ind):
 
 
 #@jit(nopython=True)
-def hop(r,p,F,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
+def hop(r,p,F,Fmod,G_beta,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
     evals, evecs = get_evecs_analytical(r)
     evals_exp = np.exp(-1.0j * evals * dt_bath)
     state_adb_t0 = vec_db_to_adb(cg_db, evecs)
@@ -582,28 +777,20 @@ def hop(r,p,F,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
             if act_surf_ind[pos] == 0:
                 k = 1
                 ev_diff = 2*A # switch from 0 to 1
-                #ba = np.dot(p[pos]/mass,-np.conj(np.array([dkkqx, dkkqy])))
-                #u_ba = np.dot(np.ones((2)),-np.conj(np.array([dkkqx,dkkqy])))
-                #known_gauge = (u_ba/np.linalg.norm(u_ba))
-                fact = -np.dot(np.ones((2)),-np.conj(np.array([dkkqx,dkkqy])))
             else:
                 k = 0
                 ev_diff = -2*A
                 dkkqx = -1.0 * np.conj(dkkqx)
                 dkkqy = -1.0 * np.conj(dkkqy)
-                #ba = np.dot(p[pos] / mass, -np.conj(np.array([dkkqx, dkkqy])))
-                #u_ba = np.dot(np.ones((2)), -np.conj(np.array([dkkqx, dkkqy])))
-                #known_gauge = (u_ba / np.linalg.norm(u_ba))
-                fact = -np.dot(np.ones((2)), -np.conj(np.array([dkkqx, dkkqy])))
             if rescale_method==2:
                 p, act_surf, act_surf_ind = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
             if rescale_method==3:
                 p, act_surf, act_surf_ind = method3_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
+            #if rescale_method==4:
+            #    p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, F_beta[pos], Fmod[pos], G_beta[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
+
             if rescale_method==4:
-                p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, F_beta[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
-            if rescale_method==4.5:
-                p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, (Fmag)[pos], p, pos, ev_diff, k, act_surf_ind,
-                                                            act_surf)
+                p, act_surf, act_surf_ind = method4_rescale_analytical(dkkqx, dkkqy,r[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
             n += 1
     return r, p, act_surf, act_surf_ind, cg_adb, cg_db
 
@@ -646,6 +833,8 @@ def runSim():
             dablist[t_ind] = np.real(np.sum(prod))
             t_ind += 1
         F = get_quantumForce(act_surf_ind,r)#np.zeros(np.shape(p))#get_F(state_db,r)
+        Fmod = get_quantumForceMOD(act_surf_ind,r)
+        G_beta = get_G(np.abs(act_surf_ind-1), r)#get_H(np.abs(act_surf_ind-1), r)#
         F_beta = get_quantumForce(np.abs(act_surf_ind-1),r)
         #norm_p_perp = np.zeros(np.shape(p))
         #norm_p_perp[:,0] = p[:,1]/(np.linalg.norm(norm_p_perp,axis=1))
@@ -662,7 +851,7 @@ def runSim():
             Ftot = F #+ Fmag
         r, p = prop_C(r, p, -F+Fmag, dt_bath)
 
-        r, p, act_surf, act_surf_ind, state_adb, state_db = hop(r, p, F, F_beta, Fmag, state_db, act_surf, act_surf_ind)
+        r, p, act_surf, act_surf_ind, state_adb, state_db = hop(r, p, F, Fmod, G_beta, F_beta, Fmag, state_db, act_surf, act_surf_ind)
     np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
     np.save(calcdir + '/tdat.npy',tdat)
     np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
@@ -707,22 +896,23 @@ def genviz():
     ec_db = np.zeros(len(tdat))
     for t_ind in tqdm(range(len(tdat))):
         r = r_out[t_ind]
+        rtrans_ind = np.arange(len(r),dtype=int)[r[:,0] > r_min]
         p = p_out[t_ind]
         rho_adb = rho_adb_out[t_ind]
         evals, evecs = get_evecs_analytical(r)
         rho_db = rho_adb_to_db(rho_adb,evecs)
         num = '{0:0>3}'.format(t_ind)
-        #plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
-        pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,:]))/num_points
-        pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,:]))/num_points
-        pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,:]))/num_points
-        pop_adb_1[t_ind] = np.sum(np.real(rho_adb[1,1,:]))/num_points
-        px0_n, py0_n, px1_n, py1_n = get_p_rho(rho_db, p, num_points)
+        plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
+        pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,rtrans_ind]))/num_points
+        pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,rtrans_ind]))/num_points
+        pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,rtrans_ind]))/num_points
+        pop_adb_1[t_ind] = np.sum(np.real(rho_adb[1,1,rtrans_ind]))/num_points
+        px0_n, py0_n, px1_n, py1_n = get_p_rho(rho_db, p, r, num_points)
         px0[t_ind] = px0_n
         px1[t_ind] = px1_n
         py0[t_ind] = py0_n
         py1[t_ind] = py1_n
-        px0_n_adb, py0_n_adb, px1_n_adb, py1_n_adb = get_p_rho(rho_adb, p, num_points)
+        px0_n_adb, py0_n_adb, px1_n_adb, py1_n_adb = get_p_rho(rho_adb, p, r, num_points)
         px0_adb[t_ind] = px0_n_adb
         px1_adb[t_ind] = px1_n_adb
         py0_adb[t_ind] = py0_n_adb

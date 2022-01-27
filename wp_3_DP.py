@@ -20,36 +20,39 @@ with open(tmpfile) as f:
         exec(str(line), globals())
 
 
-@nb.vectorize
+#@nb.vectorize
+#def erf_vec(a):
+#    return math.erf(a)
+import scipy.special
 def erf_vec(a):
-    return math.erf(a)
+    return scipy.special.erf(a.astype(np.float64))
 
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def theta(x, y):
     return (np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def Vc(x,y):
     return A*(1-alpha*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))))
 
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def phi(x, y):
     return W * y
 
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def dtheta(x, y):  # dtheta/dx
     return (Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
 
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def dphi(x, y):  # dphi/dy
     return W
 
 
-@jit(nopython=True, fastmath=True)
+#@jit(nopython=True, fastmath=True)
 def V_vec(r):
     x = r[:, 0]
     y = r[:, 1]
@@ -75,11 +78,11 @@ def wp0(r):
 #Ny = Ny;
 Lx = xran[1]-xran[0]
 Ly = yran[1]-yran[0]
-jxlist = np.arange(0,Nx-1+1,1,dtype=np.float64)# j = 0,1,...,N-1
-jylist = np.arange(0,Ny-1+1,1,dtype=np.float64)
-kxlist = np.concatenate((np.arange(0,Nx/2+1,1,dtype=np.float64),np.arange((-Nx/2),0,dtype=np.float64)))*2*np.pi/Lx#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
-kylist = np.concatenate((np.arange(0,Ny/2+1,1,dtype=np.float64),np.arange((-Ny/2),0,dtype=np.float64)))*2*np.pi/Ly#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
-klist = np.array(tuple(itertools.product(kxlist,kylist)),dtype=np.float64)
+jxlist = np.arange(0,Nx-1+1,1,dtype=np.longdouble)# j = 0,1,...,N-1
+jylist = np.arange(0,Ny-1+1,1,dtype=np.longdouble)
+kxlist = np.concatenate((np.arange(0,Nx/2+1,1,dtype=np.longdouble),np.arange((-Nx/2),0,dtype=np.longdouble)))*2*np.pi/Lx#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
+kylist = np.concatenate((np.arange(0,Ny/2+1,1,dtype=np.longdouble),np.arange((-Ny/2),0,dtype=np.longdouble)))*2*np.pi/Ly#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
+klist = np.array(tuple(itertools.product(kxlist,kylist)),dtype=np.longdouble)
 kxgrid = klist[:,0].reshape(len(kxlist),len(kylist))
 kygrid = klist[:,1].reshape(len(kxlist),len(kylist))
 knorm = np.linalg.norm(klist,axis=1)**2
@@ -91,21 +94,17 @@ dky = 2*np.pi/Ly
 print('FFT x grid ranges from, ',-np.pi*Nx/Lx, 'to ',np.pi*Nx/Lx)
 print('FFT y grid ranges from, ',-np.pi*Ny/Ly, 'to ',np.pi*Ny/Ly)
 #xran = [-L/2,L/2]
-xlist = np.linspace(xran[0],xran[1],Nx+1,dtype=np.float64)
-ylist = np.linspace(yran[0],yran[1],Ny+1,dtype=np.float64)
-rxlist = xlist
-rylist = ylist
+xlist = np.linspace(xran[0],xran[1],Nx+1,dtype=np.longdouble)
+ylist = np.linspace(yran[0],yran[1],Ny+1,dtype=np.longdouble)
 dx = (xran[1]-xran[0])/(Nx)
 dy = (yran[1]-yran[0])/(Ny)
-rlist = np.array(tuple(itertools.product(xlist, ylist)),dtype=np.float64)
-rxgrid = rlist[:, 0].reshape(len(rxlist), len(rylist))
-rygrid = rlist[:, 1].reshape(len(rxlist), len(rylist))
+rlist = np.array(tuple(itertools.product(xlist, ylist)),dtype=np.longdouble)
 V_list = V_vec(rlist)
-ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
-ev1 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
-evecs = np.zeros((2,2,len(V_list[0,0,:])),dtype=complex)
-H00 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
-H11 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
+ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.longdouble)
+ev1 = np.zeros(len(V_list[0,0,:]),dtype=np.longdouble)
+evecs = np.zeros((2,2,len(V_list[0,0,:])),dtype='complex256')
+H00 = np.zeros(len(V_list[0,0,:]),dtype=np.longdouble)
+H11 = np.zeros(len(V_list[0,0,:]),dtype=np.longdouble)
 for n in range(len(V_list[0,0,:])):
     eigvals,eigvecs = np.linalg.eigh(V_list[:,:,n])
     evecs[:,:,n] = eigvecs
@@ -116,7 +115,7 @@ for n in range(len(V_list[0,0,:])):
 
 
 def get_psi_adb(psi_db):
-    psi_adb = np.zeros_like(psi_db,dtype=complex)
+    psi_adb = np.zeros_like(psi_db,dtype='complex256')
     for n in range(np.shape(psi_db)[-1]):
         psi_adb[:,n] = np.matmul(np.transpose(np.conj(evecs[:,:,n])),psi_db[:,n])
     return psi_adb
@@ -127,40 +126,27 @@ def normalize(state_list):
     return state_list/np.sqrt(tot)
 
 
-state_list = normalize(np.array([wp0(rlist), wp1(rlist)],dtype=complex))
+state_list = normalize(np.array([wp0(rlist), wp1(rlist)],dtype='complex256'))
 
 
 def get_grad(wplist):
     xdim = Nx+1
-    ydim = Ny+1
+    ydim = Nx+1
     wpgrid = wplist.reshape(xdim, ydim)
     wpgrid_k = np.fft.fft2(wpgrid)
     return (1/(2*mass))*np.fft.ifft2(-kgrid * wpgrid_k).reshape(xdim*ydim)
-def adjust_odd(num):
-    if num % 2 == 0:
-        return num
-    else:
-        return num + 1
-Nx2 = adjust_odd(len(rxlist[rxlist > 0.0]))
-rxmin = rxlist[len(rxlist) - Nx2 - 2]
-Lx2 = xran[1] - rxmin
-jxlist2 = np.arange(0,Nx2 - 1 + 1, 1)
-kxlist2 = np.concatenate((np.arange(0, Nx2 / 2 + 1, 1),
-                             np.arange((-Nx2 / 2), 0))) * 2 * np.pi / Lx2  # np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
-klist2 = np.array(tuple(itertools.product(kxlist2, kylist)))
-kxgrid2 = klist2[:, 0].reshape(len(kxlist2), len(kylist))
-kygrid2 = klist2[:, 1].reshape(len(kxlist2), len(kylist))
-def get_tx_grid(grid):
-    tx_grid = grid[rxgrid > rxmin]
-    return tx_grid.reshape((int(len(tx_grid)/len(rylist)),len(rylist)))
+
+
 def get_px(wplist):
-    wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
+    wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
-    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid2 * wpgrid_k)) / (np.sum(np.abs(wpgrid) ** 2)))
+    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
+
+
 def get_py(wplist):
-    wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
+    wpgrid = wplist.reshape(Nx + 1, Ny + 1)
     wpgrid_k = np.fft.fft2(wpgrid)
-    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kygrid2 * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
+    return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kygrid * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
 
 #print('<0|Px|0>: ',np.round(get_px(state_list[0]),5),' <0|Py|0>: ', np.round(get_py(state_list[0]),5))
 #print('<1|Px|1>: ',np.round(get_px(state_list[1]),5),' <1|Py|1>: ', np.round(get_py(state_list[1]),5))
@@ -169,14 +155,14 @@ state_vec_adb = get_psi_adb(state_list)
 #print('<0|Px|0>: ',np.round(get_px(state_vec_adb[0]),5),' <0|Py|0>: ', np.round(get_py(state_vec_adb[0]),5))
 #print('<1|Px|1>: ',np.round(get_px(state_vec_adb[1]),5),' <1|Py|1>: ', np.round(get_py(state_vec_adb[1]),5))
 def get_grad_state(state_list):
-    out_list = np.zeros_like(state_list,dtype=complex)
+    out_list = np.zeros_like(state_list,dtype=np.complex256)
     for n in range(len(state_list)):
         out_list[n] = get_grad(state_list[n])
     return out_list
 
 
 def get_V_state(state_list):
-    out_list = np.zeros_like(state_list,dtype=complex)
+    out_list = np.zeros_like(state_list,dtype=np.complex256)
     for n in range(np.shape(V_list)[-1]):
         v = V_list[:,:,n]
         vec = state_list[:,n]
@@ -189,7 +175,7 @@ pmax = np.max(np.abs(state_list)**2)
 def timestep(state, dt):
     grad = get_grad_state(state)
     pot = get_V_state(state)
-    out_vec = np.zeros_like(grad,dtype=complex)
+    out_vec = np.zeros_like(grad,dtype=np.complex256)
     for n in range(np.shape(state)[-1]):
         def f(t,psi0):
             return 1.0j*grad[:,n] -1.0j*pot[:,n]
@@ -214,13 +200,13 @@ def timestep2(state_n,state_nm1,dt):
 
 def plot_state(state_vec,filename):
     xdim = Nx+1
-    ydim = Ny+1
+    ydim = Nx+1
     psi1 = state_vec[1]
     psi0 = state_vec[0]
     pmax = np.max(np.abs(state_vec)**2)
     pmax0 = np.max(np.abs(psi0)**2)
     pmax1 = np.max(np.abs(psi1)**2)
-    fig = plt.figure(tight_layout=False,dpi=100)
+    fig = plt.figure(tight_layout=False,dpi=300)
     spec = gridspec.GridSpec(ncols=2,nrows=1,figure=fig)
     ax0 = fig.add_subplot(spec[0])
     ax1 = fig.add_subplot(spec[1])
@@ -243,7 +229,7 @@ def plot_state(state_vec,filename):
 def runSim():
     tdat = np.arange(0,tmax+dt,dt)
     tdat_bath = np.arange(0,tmax+dt_bath,dt_bath)
-    psi_out = np.zeros((len(tdat),len(state_list),len(rlist)),dtype=complex)
+    psi_out = np.zeros((len(tdat),len(state_list),len(rlist)),dtype='complex128')
     state = state_list
     t_ind = 0
     for t_bath_ind in tqdm(range(len(tdat_bath))):
@@ -271,19 +257,19 @@ def genviz():
     tdat = np.load(calcdir + '/tdat.npy')
     if not(os.path.exists(calcdir+'/images/')):
         os.mkdir(calcdir+'/images/')
-    pop_db_0 = np.zeros(len(tdat),dtype=np.float64)
-    pop_db_1 = np.zeros(len(tdat),dtype=np.float64)
-    pop_adb_0 = np.zeros(len(tdat),dtype=np.float64)
-    pop_adb_1 = np.zeros(len(tdat),dtype=np.float64)
-    px0 = np.zeros(len(tdat),dtype=np.float64)
-    px1 = np.zeros(len(tdat),dtype=np.float64)
-    py0 = np.zeros(len(tdat),dtype=np.float64)
-    py1 = np.zeros(len(tdat),dtype=np.float64)
-    px0_adb = np.zeros(len(tdat),dtype=np.float64)
-    px1_adb = np.zeros(len(tdat),dtype=np.float64)
-    py0_adb = np.zeros(len(tdat),dtype=np.float64)
-    py1_adb = np.zeros(len(tdat),dtype=np.float64)
-    e_db = np.zeros(len(tdat),dtype=np.float64)
+    pop_db_0 = np.zeros(len(tdat),dtype=np.longdouble)
+    pop_db_1 = np.zeros(len(tdat),dtype=np.longdouble)
+    pop_adb_0 = np.zeros(len(tdat),dtype=np.longdouble)
+    pop_adb_1 = np.zeros(len(tdat),dtype=np.longdouble)
+    px0 = np.zeros(len(tdat),dtype=np.longdouble)
+    px1 = np.zeros(len(tdat),dtype=np.longdouble)
+    py0 = np.zeros(len(tdat),dtype=np.longdouble)
+    py1 = np.zeros(len(tdat),dtype=np.longdouble)
+    px0_adb = np.zeros(len(tdat),dtype=np.longdouble)
+    px1_adb = np.zeros(len(tdat),dtype=np.longdouble)
+    py0_adb = np.zeros(len(tdat),dtype=np.longdouble)
+    py1_adb = np.zeros(len(tdat),dtype=np.longdouble)
+    e_db = np.zeros(len(tdat),dtype=np.longdouble)
     for t_ind in tqdm(range(np.shape(psi)[0])):
         num = '{0:0>3}'.format(t_ind)
         state = psi[t_ind]

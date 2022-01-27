@@ -11,6 +11,7 @@ def main():
     inputfile = args[0]
     num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1
     tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
+    viz_only = False
     with open(inputfile) as f:
         for line in f:
             line1 = line.replace(" ", "")
@@ -89,7 +90,7 @@ def main():
                         for A in A_vals:
                             for alpha in alpha_vals:
                                 for p_vec in p_vec_list:
-                                    input_data, filename = gen_wp_input_3(alpha, A,Bx,By,W,p_vec[0],p_vec[1],xran,yran,pxmax,pymax)
+                                    input_data, filename = gen_wp_input_3(alpha, A,Bx,By,W,p_vec[0],p_vec[1],xran,yran,rinit,pxmax,pymax,dtfac=dt_fac,t_mult=t_mult)
                                     write_input(filename,input_data)
                                     with open(filename) as f:
                                         for line in f:
@@ -196,7 +197,7 @@ def main():
                         for A in A_vals:
                             for alpha in alpha_vals:
                                 for p_vec in p_vec_list:
-                                    input_data, filename = gen_sh_input_3(alpha,A, Bx, By, W, N, p_vec[0], p_vec[1],r_init[0],r_init[1], rescale_method)
+                                    input_data, filename = gen_sh_input_3(alpha,A, Bx, By, W, N, p_vec[0], p_vec[1],r_init[0],r_init[1], rescale_method,t_mult)
                                     write_input(filename, input_data)
                                     with open(filename) as f:
                                         for line in f:
@@ -208,7 +209,8 @@ def main():
                                     from fssh_3 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
-                                    runSim()
+                                    if not(viz_only):
+                                        runSim()
                                     genviz()
                                     os.remove(tmpfile)
                                     del runSim
