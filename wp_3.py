@@ -19,6 +19,8 @@ with open(tmpfile) as f:
         name, value = line1.split("=")
         exec(str(line), globals())
 
+A = A*1000
+
 
 @nb.vectorize
 def erf_vec(a):
@@ -62,7 +64,8 @@ def V_vec(r):
 
 hbar = 1
 sigma = 1
-mass = 1000
+#mass = 1000
+mass = 1
 
 def wp1(r):
     return np.exp((1.0j/hbar)*np.dot(r,pinit))*np.exp(-(1/sigma**2)*np.linalg.norm(r - rinit,axis=1)**2)
@@ -130,7 +133,7 @@ def normalize(state_list):
 state_list = normalize(np.array([wp0(rlist), wp1(rlist)],dtype=complex))
 
 
-def get_grad(wplist):
+def get_grad(wplist): ## kgrid is k^2
     xdim = Nx+1
     ydim = Ny+1
     wpgrid = wplist.reshape(xdim, ydim)
@@ -141,7 +144,8 @@ def adjust_odd(num):
         return num
     else:
         return num + 1
-Nx2 = adjust_odd(len(rxlist[rxlist > 0.0]))
+r_min = 1.0
+Nx2 = adjust_odd(len(rxlist[rxlist > r_min]))
 rxmin = rxlist[len(rxlist) - Nx2 - 2]
 Lx2 = xran[1] - rxmin
 jxlist2 = np.arange(0,Nx2 - 1 + 1, 1)
@@ -247,6 +251,10 @@ def runSim():
     state = state_list
     t_ind = 0
     for t_bath_ind in tqdm(range(len(tdat_bath))):
+        if len(tdat_bath) == t_bath_ind:
+            break
+        if len(tdat) == t_ind:
+            break
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
             psi_out[t_ind,:,:] += state
             if np.abs(1-np.sum(np.abs(state)**2)) > 1e-3:

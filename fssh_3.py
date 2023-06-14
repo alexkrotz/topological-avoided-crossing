@@ -9,6 +9,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
+import itertools
 
 num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
@@ -21,10 +22,11 @@ with open(tmpfile) as f:
 
 hbar = 1
 sigma = 1
-mass = 1000
-
+#mass = 1000
+mass = 1
+A = A*1000
 #np.random.seed(1234)
-
+print(A)
 
 @nb.vectorize
 def erf_vec(a):
@@ -489,8 +491,8 @@ def nan_num2(num):
     else:
         return num
 
-@jit(nopython=True)
-def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf):
+@jit(nopython=True) # joe's method
+def method2_rescale_(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list):
     #phase_x = np.conj(dkkqx/np.abs(dkkqx))
     #dkkqx = dkkqx * phase_x
     #dkkqy = dkkqy * phase_x
@@ -516,7 +518,141 @@ def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf):
         act_surf_ind[pos] = k
         act_surf[:, pos] = 0
         act_surf[act_surf_ind[pos], pos] = 1
-    return p, act_surf, act_surf_ind
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
+
+@jit(nopython=True) # joe's method
+def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list, r, flag):
+    #phase_x = np.conj(dkkqx/np.abs(dkkqx))
+    #dkkqx = dkkqx * phase_x
+    #dkkqy = dkkqy * phase_x
+    fac1 = np.real(2*dkkqx)**2
+    fac2 = np.real(-1.0j*2*dkkqy)**2
+    if fac1 > fac2:
+        dkkq = np.array([1,0])
+    else:
+        dkkq = np.array([0,1])
+    akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
+    bkkq = np.sum((p[pos] / mass) * dkkq)
+    disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
+    if flag == 1:
+        flag_b = r[pos, 0] > 0
+    if flag == -1:
+        flag_b = r[pos, 0] < 0
+    if flag == 0:
+        flag_b = True
+    if disc >= 0 and flag_b:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p[pos] = p[pos] - (np.real(gamma) * dkkq)
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
+
+@jit(nopython=True)
+def xonly_rescale_(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list):
+    #phase_x = np.conj(dkkqx/np.abs(dkkqx))
+    #dkkqx = dkkqx * phase_x
+    #dkkqy = dkkqy * phase_x
+    #fac1 = np.real(2*dkkqx)**2
+    #fac2 = np.real(-1.0j*2*dkkqy)**2
+    #if fac1 > fac2:
+    #    dkkq = np.array([1,0])
+    #else:
+    #    dkkq = np.array([0,1])
+    dkkq = np.array([1,0])
+    akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
+    bkkq = np.sum((p[pos] / mass) * dkkq)
+    disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p[pos] = p[pos] - (np.real(gamma) * dkkq)
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
+
+@jit(nopython=True)
+def xonly_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list, r, flag):
+    #phase_x = np.conj(dkkqx/np.abs(dkkqx))
+    #dkkqx = dkkqx * phase_x
+    #dkkqy = dkkqy * phase_x
+    #fac1 = np.real(2*dkkqx)**2
+    #fac2 = np.real(-1.0j*2*dkkqy)**2
+    #if fac1 > fac2:
+    #    dkkq = np.array([1,0])
+    #else:
+    #    dkkq = np.array([0,1])
+    dkkq = np.array([1,0])
+    akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
+    bkkq = np.sum((p[pos] / mass) * dkkq)
+    disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
+    if flag == 1:
+        flag_b = r[pos,0] > 0
+    if flag == -1:
+        flag_b = r[pos,0] < 0
+    if flag == 0:
+        flag_b = True
+    if disc >= 0 and flag_b:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p[pos] = p[pos] - (np.real(gamma) * dkkq)
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
+
+@jit(nopython=True)
+def yonly_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list):
+    dkkq = np.array([0,1])
+    akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
+    bkkq = np.sum((p[pos] / mass) * dkkq)
+    disc = (bkkq ** 2) - 4 * (akkq) * ev_diff
+    if disc >= 0:
+        if bkkq < 0:
+            gamma = bkkq + np.sqrt(disc)
+        else:
+            gamma = bkkq - np.sqrt(disc)
+        if akkq == 0:
+            gamma = 0
+        else:
+            gamma = gamma / (2 * (akkq))
+        p[pos] = p[pos] - (np.real(gamma) * dkkq)
+        act_surf_ind[pos] = k
+        act_surf[:, pos] = 0
+        act_surf[act_surf_ind[pos], pos] = 1
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
+
+
 
 
 @jit(nopython=True)
@@ -692,7 +828,7 @@ def get_theta(r,act_surf):
     else:
         angle = fac*np.arctan(num/den)
     return angle
-def method4_rescale_analytical(dkkqx, dkkqy,r, p, pos,ev_diff,k,act_surf_ind,act_surf): # find preferred gauge orthogonal to Fmag then take real part
+def method4_rescale_analytical(dkkqx, dkkqy,r, p, pos,ev_diff,k,act_surf_ind,act_surf, hop_list): # find preferred gauge orthogonal to Fmag then take real part
     dkkq = np.array([dkkqx,dkkqy])
     theta_analytical = get_theta(r,act_surf_ind[pos])
     dkkq = dkkq * np.exp(1.0j * theta_analytical)
@@ -714,11 +850,13 @@ def method4_rescale_analytical(dkkqx, dkkqy,r, p, pos,ev_diff,k,act_surf_ind,act
         act_surf_ind[pos] = k
         act_surf[:, pos] = 0
         act_surf[act_surf_ind[pos], pos] = 1
-    return p, act_surf, act_surf_ind
+        if decohere == 1:
+            hop_list[pos] = 0
+    return p, act_surf, act_surf_ind, hop_list
 
 
 
-@jit(nopython=True)
+@jit(nopython=True) # joe's method
 def method2_analytical(dkkqx,dkkqy):
     fac1 = np.real(2*dkkqx)**2
     fac2 = np.real(-1.0j*2*dkkqy)**2
@@ -729,6 +867,13 @@ def method2_analytical(dkkqx,dkkqy):
     out_vec[pos10][:,1] = 0
     out_vec[pos01][:,0] = 0
     out_vec[pos01][:,1] = 1
+    return out_vec
+
+@jit(nopython=True) # x-rescaling
+def method_X(dkkqx,dkkqy):
+    out_vec = np.ascontiguousarray(np.zeros((len(dkkqx),2)))
+    out_vec[:,0] = 1
+    out_vec[:,1] = 0
     return out_vec
 
 @jit(nopython=True)
@@ -746,9 +891,8 @@ def get_cgadb_act(cg_adb,act_surf_ind):
     return out
 
 
-
 #@jit(nopython=True)
-def hop(r,p,F,Fmod,G_beta,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
+def hop(r,p,F,Fmod,G_beta,F_beta,Fmag,cg_db,act_surf,act_surf_ind, hop_list,p0):
     evals, evecs = get_evecs_analytical(r)
     evals_exp = np.exp(-1.0j * evals * dt_bath)
     state_adb_t0 = vec_db_to_adb(cg_db, evecs)
@@ -768,6 +912,13 @@ def hop(r,p,F,Fmod,G_beta,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
     pdab[ind_1] = (p[:,0][ind_1]/mass) * -np.conj(dkkx_list[ind_1]) + (p[:,1][ind_1]/mass) * -np.conj(dkky_list[ind_1])
     hop_prob =  2 * dt_bath * np.real((cg_adb_b/cg_adb_a) * (pdab))
     hop_prob = nan_num(hop_prob)
+    hop_list_prev = np.copy(hop_list)
+    if decohere == 2:
+        dec_pos = np.where(p0[:,0] * p[:,0] < 0)[0]
+        hop_list[dec_pos] = 0
+    #if decohere != 0:
+    #    hop_prob = hop_prob * hop_list
+
     hop_pos = np.where(rand < hop_prob)[0]
     if len(hop_pos) > 0:
         gauge_list = np.random.rand(len(hop_pos)) * 2 * np.pi
@@ -776,23 +927,135 @@ def hop(r,p,F,Fmod,G_beta,F_beta,Fmag,cg_db,act_surf,act_surf_ind):
             dkkqx, dkkqy = dkkx_list[pos], dkky_list[pos]  # get_dkk_analytical2(r[pos])#
             if act_surf_ind[pos] == 0:
                 k = 1
-                ev_diff = 2*A # switch from 0 to 1
+                ev_diff = evals[1,pos] - evals[0,pos]#2*A # switch from 0 to 1  eb-ea
             else:
                 k = 0
-                ev_diff = -2*A
+                ev_diff = evals[0,pos] - evals[1,pos]#-2*A
                 dkkqx = -1.0 * np.conj(dkkqx)
                 dkkqy = -1.0 * np.conj(dkkqy)
+
             if rescale_method==2:
-                p, act_surf, act_surf_ind = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
-            if rescale_method==3:
-                p, act_surf, act_surf_ind = method3_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
+                p, act_surf, act_surf_ind, hop_list = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf, hop_list,r,0)
+            if rescale_method == 9:
+                p, act_surf, act_surf_ind, hop_list = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list, r, -1)
+            if rescale_method==10:
+                p, act_surf, act_surf_ind, hop_list = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list, r, +1)
+            #if rescale_method==3:
+            #    p, act_surf, act_surf_ind = method3_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf)
             #if rescale_method==4:
             #    p, act_surf, act_surf_ind = method4_rescale(dkkqx, dkkqy, F_beta[pos], Fmod[pos], G_beta[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
-
+            if rescale_method == 5:  # always rescale in x-direction ie phi_beta = 0 always
+                #p, act_surf, act_surf_ind, hop_list = xonly_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                #                                                    act_surf, hop_list)
+                p, act_surf, act_surf_ind, hop_list = xonly_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list, r, 0)
+            if rescale_method==6: # always rescale in y-direction ie phi_beta = 0 always
+                p, act_surf, act_surf_ind, hop_list = yonly_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list)
             if rescale_method==4:
-                p, act_surf, act_surf_ind = method4_rescale_analytical(dkkqx, dkkqy,r[pos], p, pos,ev_diff,k,act_surf_ind,act_surf)
+                p, act_surf, act_surf_ind, hop_list = method4_rescale_analytical(dkkqx, dkkqy,r[pos], p, pos,ev_diff,k,act_surf_ind,act_surf, hop_list)
+            if rescale_method==7: # always rescale in x but only if x < 0
+                p, act_surf, act_surf_ind, hop_list = xonly_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list, r, -1)
+            if rescale_method==8: # always rescale in x but only if x > 0
+                p, act_surf, act_surf_ind, hop_list = xonly_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind,
+                                                                      act_surf, hop_list, r, +1)
+
             n += 1
-    return r, p, act_surf, act_surf_ind, cg_adb, cg_db
+    if decohere != 0:
+        new_decs = np.where((hop_list_prev - hop_list) == 1)[0]
+        #if np.sum(new_decs) > 0:
+        #    print('psi0',cg_adb[0,new_decs])
+        #    print('psi1',cg_adb[1,new_decs])
+        cg_adb[0,new_decs] = act_surf[0,new_decs]
+        cg_adb[1,new_decs] = act_surf[1,new_decs]
+        #if np.sum(new_decs) > 0:
+        #    print('psi0 t',cg_adb[0,new_decs])
+        #    print('psi1 t',cg_adb[1,new_decs])
+    return r, p, act_surf, act_surf_ind, cg_adb, cg_db, hop_list
+
+xedges = np.linspace(-10, 45, 350, endpoint=True)
+yedges = np.linspace(-15, 15, 200, endpoint=True)
+rxlist = xedges
+rylist = yedges
+rlist = np.array(tuple(itertools.product(rxlist, rylist)))
+rxgrid = rlist[:, 0].reshape(len(rxlist), len(rylist))
+rygrid = rlist[:, 1].reshape(len(rxlist), len(rylist))
+
+
+def get_hist(r, state):
+    pop_0 = np.real(state[0,0,:])
+    pop_1 = np.real(state[1,1,:])
+    H0, _, _ = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_0,density=False)
+    H1, _, _ = np.histogram2d(r[:,0],r[:,1],bins=(xedges,yedges),weights=pop_1,density=False)
+    # no normalization needed
+    #if np.sum(H0) != 0:
+    #    H0 = (H0 / np.sum(H0))*np.sum(pop_0)
+    #if np.sum(H1) != 0:
+    #    H1 = (H1 / np.sum(H1))*np.sum(pop_1)
+    return H0, H1
+r_min = 1.0
+
+def get_p_rho(rho, p, r):
+    rtrans_ind = np.arange(len(r),dtype=int)[r[:,0] > r_min]
+    px0 = np.real(np.sum(rho[0, 0, rtrans_ind] * p[rtrans_ind, 0]) / np.sum(rho[0, 0, rtrans_ind]))
+    py0 = np.real(np.sum(rho[0, 0, rtrans_ind] * p[rtrans_ind, 1]) / np.sum(rho[0, 0, rtrans_ind]))
+    px1 = np.real(np.sum(rho[1, 1, rtrans_ind] * p[rtrans_ind, 0]) / np.sum(rho[1, 1, rtrans_ind]))
+    py1 = np.real(np.sum(rho[1, 1, rtrans_ind] * p[rtrans_ind, 1]) / np.sum(rho[1, 1, rtrans_ind] ))
+    return px0, py0, px1, py1
+
+def get_trans_pop(rho, r):
+    rtrans_ind = np.arange(len(r), dtype=int)[r[:, 0] > r_min]
+    rho_0 = np.real(np.sum(rho[0,0,rtrans_ind]))
+    rho_1 = np.real(np.sum(rho[1,1,rtrans_ind]))
+    return rho_0, rho_1
+
+
+#adb_0_hist, adb_1_hist, db_0_hist, db_1_hist,\
+#    r_db,p_db, r_adb, p_adb, tdat = get_obs(rho_adb_out, rho_db_out, tdat, r_out, p_out)
+def get_obs(rho_adb_out, rho_db_out, tdat, r_out, p_out, Ec_out, Eq_out, num_traj):
+    rho_db_0_hist_out = np.zeros((np.shape(xedges)[0]-1,np.shape(yedges)[0]-1,len(tdat)))
+    rho_db_1_hist_out = np.zeros((np.shape(xedges)[0]-1,np.shape(yedges)[0]-1,len(tdat)))
+    rho_adb_0_hist_out = np.zeros((np.shape(xedges)[0]-1,np.shape(yedges)[0]-1,len(tdat)))
+    rho_adb_1_hist_out = np.zeros((np.shape(xedges)[0]-1,np.shape(yedges)[0]-1,len(tdat)))
+    p_db_val_out = np.zeros((4,len(tdat))) # px_0, py_0, px_1, py_1, tdat
+    p_adb_val_out = np.zeros((4,len(tdat)))
+    pop_db_val_out = np.zeros((2,len(tdat))) # transmitted db_0, db_1, tdat
+    pop_adb_val_out = np.zeros((2,len(tdat))) # transmitted adb_0, adb_1, tdat
+    Ec_val_out = np.sum(Ec_out,axis=1)
+    Eq_val_out = np.sum(Eq_out,axis=1)
+    for t_ind in range(len(tdat)):
+        r = r_out[t_ind]
+        p = p_out[t_ind]
+        rho_adb = rho_adb_out[t_ind]
+        rho_db = rho_db_out[t_ind]
+        rho_db_0_grid, rho_db_1_grid = get_hist(r, rho_db)
+        rho_adb_0_grid, rho_adb_1_grid = get_hist(r, rho_adb)
+        rho_db_0_hist_out[:,:,t_ind] = rho_db_0_grid
+        rho_db_1_hist_out[:,:,t_ind] = rho_db_1_grid
+        rho_adb_0_hist_out[:,:,t_ind] = rho_adb_0_grid
+        rho_adb_1_hist_out[:,:,t_ind] = rho_adb_1_grid
+        pop_db_0, pop_db_1 = get_trans_pop(rho_db,r)
+        pop_adb_0, pop_adb_1 = get_trans_pop(rho_adb,r)
+        pop_db_val_out[0,t_ind] = pop_db_0
+        pop_db_val_out[1,t_ind] = pop_db_1
+        pop_adb_val_out[0,t_ind] = pop_adb_0
+        pop_adb_val_out[1,t_ind] = pop_adb_1
+        px_0_db, py_0_db, px_1_db, py_1_db = get_p_rho(rho_db, p, r)
+        px_0_adb, py_0_adb, px_1_adb, py_1_adb = get_p_rho(rho_adb,p,r)
+        p_db_val_out[0, t_ind] = px_0_db * num_traj
+        p_db_val_out[1, t_ind] = py_0_db * num_traj
+        p_db_val_out[2, t_ind] = px_1_db * num_traj
+        p_db_val_out[3, t_ind] = py_1_db * num_traj
+        p_adb_val_out[0, t_ind] = px_0_adb * num_traj
+        p_adb_val_out[1, t_ind] = py_0_adb * num_traj
+        p_adb_val_out[2, t_ind] = px_1_adb * num_traj
+        p_adb_val_out[3, t_ind] = py_1_adb * num_traj
+    return rho_adb_0_hist_out, rho_adb_1_hist_out, rho_db_0_hist_out, rho_db_1_hist_out, p_adb_val_out, p_db_val_out,\
+            pop_db_val_out, pop_adb_val_out, Ec_val_out, Eq_val_out
+
 
 
 def runSim():
@@ -804,23 +1067,33 @@ def runSim():
     tdat = np.arange(0,tmax+dt,dt)
     tdat_bath = np.arange(0,tmax+dt_bath,dt_bath)
     r, p = get_rp(rinit, pinit, num_points)
+    p0 = np.copy(p)
+    ran = np.arange(num_points,dtype=int)
     state_vec = np.zeros((2, num_points), dtype=complex)  # + np.sqrt(0.5) + 0.0j
     state_vec[1] = 1 + 0.0j  # wp1(r)#/np.sqrt(num_points)
     rho_adb_out = np.zeros((len(tdat),len(state_vec),len(state_vec),len(r)),dtype=complex)
+    rho_db_out = np.zeros((len(tdat),len(state_vec),len(state_vec),len(r)),dtype=complex)
     state_db = state_vec
     evals, evecs = get_evecs_analytical(r)#get_evecs(r)
     state_adb = vec_db_to_adb(state_db, evecs)
     pops_adb = np.real(np.abs(state_adb)**2)
     act_surf_ind, act_surf = init_act_surf(pops_adb)
+    hop_list = np.ones((len(r)),dtype=int) #multiply this by hop probs, once a hop happens set to 0.
     #px0, py0, px1, py1 = get_p(state_db, p, num_points)
     #print('<0|Px|0>: ', np.round(px0, 5), ' <0|Py|0>: ', np.round(py0, 5))
     #print('<1|Px|1>: ', np.round(px1, 5), ' <1|Py|1>: ', np.round(py1, 5))
     p_out = np.zeros((len(tdat),len(p), 2))
     r_out = np.zeros((len(tdat),len(r), 2))
+    Ec_out = np.zeros((len(tdat),num_points))
+    Eq_out = np.zeros((len(tdat),num_points))
     t_ind = 0
     prod = np.zeros(len(r))
     dablist = np.zeros(len(tdat))
     for t_bath_ind in tqdm(range(len(tdat_bath))):
+        if len(tdat_bath) == t_bath_ind:
+            break
+        if len(tdat) == t_ind:
+            break
         if tdat[t_ind] <= tdat_bath[t_bath_ind] + 0.5 * dt_bath or t_bath_ind == len(tdat_bath) - 1:
             rho_adb = np.zeros((2,2,np.shape(state_adb)[-1]),dtype=complex)
             rho_adb[0,0,:] = act_surf[0,:]
@@ -830,6 +1103,11 @@ def runSim():
             rho_adb_out[t_ind, :, :, :] = rho_adb
             p_out[t_ind,:] = p
             r_out[t_ind,:] = r
+            Ec_out[t_ind,:] = np.sum((p**2)/(2*mass),axis=1)
+            evals, evecs = get_evecs_analytical(r)
+            Eq_out[t_ind,:] = evals[act_surf_ind,ran]
+            rho_db = rho_adb_to_db(rho_adb, evecs)
+            rho_db_out[t_ind, :, :, :] = rho_db
             dablist[t_ind] = np.real(np.sum(prod))
             t_ind += 1
         F = get_quantumForce(act_surf_ind,r)#np.zeros(np.shape(p))#get_F(state_db,r)
@@ -851,15 +1129,167 @@ def runSim():
             Ftot = F #+ Fmag
         r, p = prop_C(r, p, -F+Fmag, dt_bath)
 
-        r, p, act_surf, act_surf_ind, state_adb, state_db = hop(r, p, F, Fmod, G_beta, F_beta, Fmag, state_db, act_surf, act_surf_ind)
-    np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
-    np.save(calcdir + '/tdat.npy',tdat)
-    np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
-    np.save(calcdir + '/r_' + str(run_num) + '.npy', r_out)
-    np.save(calcdir + '/run_num.npy', run_num)
-    return
+        r, p, act_surf, act_surf_ind, state_adb, state_db, hop_list = hop(r, p, F, Fmod, G_beta, F_beta, Fmag, state_db, act_surf, act_surf_ind, hop_list,p0)
 
+    rho_adb_0_hist_out, rho_adb_1_hist_out, rho_db_0_hist_out, rho_db_1_hist_out, p_adb_val_out, p_db_val_out,\
+            pop_db_val_out, pop_adb_val_out, Ec_val_out, Eq_val_out = get_obs(rho_adb_out, rho_db_out, tdat, r_out, p_out,Ec_out,Eq_out,num_points)
+    #np.save(calcdir + '/rho_adb_'+str(run_num)+'.npy',rho_adb_out)
+    #np.save(calcdir + '/p_' + str(run_num) + '.npy', p_out)
+    #np.save(calcdir + '/r_' + str(run_num) + '.npy', r_out)
+    np.save(calcdir + '/tdat.npy',tdat)
+    np.save(calcdir + '/adb_0_hist_' + str(run_num) + '.npy', rho_adb_0_hist_out)
+    np.save(calcdir + '/adb_1_hist_' + str(run_num) + '.npy', rho_adb_1_hist_out)
+    np.save(calcdir + '/db_0_hist_' + str(run_num) + '.npy', rho_db_0_hist_out)
+    np.save(calcdir + '/db_1_hist_' + str(run_num) + '.npy', rho_db_1_hist_out)
+    np.save(calcdir + '/p_adb_' + str(run_num) + '.npy', p_adb_val_out)
+    np.save(calcdir + '/p_db_' + str(run_num) + '.npy', p_db_val_out)
+    np.save(calcdir + '/pop_db_' + str(run_num) + '.npy', pop_db_val_out)
+    np.save(calcdir + '/pop_adb_' + str(run_num) + '.npy', pop_adb_val_out)
+    np.save(calcdir + '/Eq_'+str(run_num)+'.npy',Eq_val_out)
+    np.save(calcdir + '/Ec_' + str(run_num) + '.npy', Ec_val_out)
+    np.save(calcdir + '/run_num.npy', run_num)
+    np.save(calcdir + '/rxgrid.npy',rxgrid)
+    np.save(calcdir + '/rygrid.npy',rygrid)
+    return
 def genviz():
+    print('Generating Visualization...')
+    run_num = np.load(calcdir + '/run_num.npy')
+    for n in np.arange(0,run_num+1):
+        if n == 0:
+            p_adb_out = np.load(calcdir + '/p_adb_' + str(n) + '.npy')
+            p_db_out = np.load(calcdir + '/p_db_' + str(n) + '.npy')
+            pop_adb_out = np.load(calcdir + '/pop_adb_' + str(n) + '.npy')
+            pop_db_out = np.load(calcdir + '/pop_db_' + str(n) + '.npy')
+            rho_db_0_out = np.load(calcdir + '/db_0_hist_' + str(n) + '.npy')
+            rho_db_1_out = np.load(calcdir + '/db_1_hist_' + str(n) + '.npy')
+            Ec_out = np.load(calcdir + '/Ec_' + str(run_num) + '.npy')
+            Eq_out = np.load(calcdir + '/Eq_' + str(run_num) + '.npy')
+        else:
+            p_adb_out += np.load(calcdir + '/p_adb_' + str(n) + '.npy')
+            p_db_out += np.load(calcdir + '/p_db_' + str(n) + '.npy')
+            pop_adb_out += np.load(calcdir + '/pop_adb_' + str(n) + '.npy')
+            pop_db_out += np.load(calcdir + '/pop_db_' + str(n) + '.npy')
+            rho_db_0_out += np.load(calcdir + '/db_0_hist_' + str(n) + '.npy')
+            rho_db_1_out += np.load(calcdir + '/db_1_hist_' + str(n) + '.npy')
+            Ec_out += np.load(calcdir + '/Ec_' + str(run_num) + '.npy')
+            Eq_out += np.load(calcdir + '/Eq_' + str(run_num) + '.npy')
+
+    num_points = np.sum(rho_db_1_out[:,:,0] + rho_db_0_out[:,:,0])
+    p_adb_out = p_adb_out/num_points
+    p_db_out = p_db_out/num_points
+    pop_adb_out = pop_adb_out/num_points
+    pop_db_out = pop_db_out/num_points
+    Ec_out = Ec_out/num_points
+    Eq_out = Eq_out/num_points
+    print(Ec_out + Eq_out)
+    pop_db_0 = pop_db_out[0]
+    pop_db_1 = pop_db_out[1]
+    pop_adb_0 = pop_adb_out[0]
+    pop_adb_1 = pop_adb_out[1]
+    px0 = p_db_out[0, :]
+    py0 = p_db_out[1, :]
+    px1 = p_db_out[2, :]
+    py1 = p_db_out[3, :]
+    px0_adb = p_adb_out[0, :]
+    py0_adb = p_adb_out[1, :]
+    px1_adb = p_adb_out[2, :]
+    py1_adb = p_adb_out[3, :]
+
+
+
+    tdat = np.load(calcdir + '/tdat.npy')
+    if not (os.path.exists(calcdir + '/images/')):
+        os.mkdir(calcdir + '/images/')
+    #pop_db_0 = np.zeros(len(tdat))
+    #pop_db_1 = np.zeros(len(tdat))
+    #pop_adb_0 = np.zeros(len(tdat))
+    #pop_adb_1 = np.zeros(len(tdat))
+    #px0 = np.zeros(len(tdat))
+    #px1 = np.zeros(len(tdat))
+    #py0 = np.zeros(len(tdat))
+    #py1 = np.zeros(len(tdat))
+    #px0_adb = np.zeros(len(tdat))
+    #px1_adb = np.zeros(len(tdat))
+    #py0_adb = np.zeros(len(tdat))
+    #py1_adb = np.zeros(len(tdat))
+    #eq_db = np.zeros(len(tdat))
+    #ec_db = np.zeros(len(tdat))
+    #for t_ind in tqdm(range(len(tdat))):
+    #    #r = r_out[t_ind]
+    #    #rtrans_ind = np.arange(len(r),dtype=int)[r[:,0] > r_min]
+    #    #p = p_out[t_ind]
+    #    #rho_adb = rho_adb_out[t_ind]
+    #    #evals, evecs = get_evecs_analytical(r)
+    #    #rho_db = rho_adb_to_db(rho_adb,evecs)
+    #    num = '{0:0>3}'.format(t_ind)
+    #    #plot_state(r, rho_db, calcdir + '/images/state_' + str(num) + '.png')
+    #    #pop_db_0[t_ind] = np.sum(np.real(rho_db[0,0,rtrans_ind]))/num_points
+    #    #pop_db_1[t_ind] = np.sum(np.real(rho_db[1,1,rtrans_ind]))/num_points
+    #    #pop_adb_0[t_ind] = np.sum(np.real(rho_adb[0,0,rtrans_ind]))/num_points
+    #    #pop_adb_1[t_ind] = np.sum(np.real(rho_adb[1,1,rtrans_ind]))/num_points
+    #    #px0_n, py0_n, px1_n, py1_n = get_p_rho(rho_db, p, r, num_points)
+    #    px0_n, py0_n, px1_n, py1_n = p_db_out[t_ind]#get_p_rho(rho_db, p, r, num_points)
+    #    px0[t_ind] = px0_n/num_points
+    #    px1[t_ind] = px1_n/num_points
+    #    py0[t_ind] = py0_n/num_points
+    #    py1[t_ind] = py1_n/num_points
+    #    px0_n_adb, py0_n_adb, px1_n_adb, py1_n_adb = p_adb_out[t_ind]#get_p_rho(rho_adb, p, r, num_points)
+    #    px0_adb[t_ind] = px0_n_adb/num_points
+    #    px1_adb[t_ind] = px1_n_adb/num_points
+    #    py0_adb[t_ind] = py0_n_adb/num_points
+    #    py1_adb[t_ind] = py1_n_adb/num_points
+    #    ec_db[t_ind] = (np.sum((1/(2*mass))*p**2))/num_points#get_E(state, r))/num_points
+    #    eq_db[t_ind] =  get_E_adb(rho_adb,evals)/num_points
+    plt.plot(tdat, Eq_out - Eq_out[0], label='eq')
+    plt.plot(tdat, Ec_out - Ec_out[0], label='ec')
+    plt.plot(tdat,Ec_out - Ec_out[0] + Eq_out - Eq_out[0])
+    plt.show()
+    fig = plt.figure(tight_layout=False, dpi=300)
+    spec = gridspec.GridSpec(ncols=2, nrows=3, figure=fig)
+    ax0 = fig.add_subplot(spec[0])
+    ax1 = fig.add_subplot(spec[1])
+    ax2 = fig.add_subplot(spec[2])
+    ax3 = fig.add_subplot(spec[3])
+    ax4 = fig.add_subplot(spec[4])
+    ax5 = fig.add_subplot(spec[5])
+    ax0.plot(tdat, pop_db_0, label=r'$\rho_{00}$')
+    ax0.plot(tdat, pop_db_1, label=r'$\rho_{11}$')
+    ax0.set_title('Diabatic populations')
+    ax0.legend()
+    ax1.plot(tdat, pop_adb_0, label=r'$\rho_{00}$')
+    ax1.plot(tdat, pop_adb_1, label=r'$\rho_{11}$')
+    ax1.set_title('Adiabatic populations')
+    ax1.legend()
+    ax2.plot(tdat, px0, label=r'$\langle 0 | P_{x}| 0 \rangle$')
+    ax2.plot(tdat, px1, label=r'$\langle 1 | P_{x}| 1 \rangle$')
+    ax2.set_title('Diabatic Px')
+    ax2.legend()
+    ax3.plot(tdat, py0, label=r'$\langle 0 | P_{y}| 0 \rangle$')
+    ax3.plot(tdat, py1, label=r'$\langle 1 | P_{y}| 1 \rangle$')
+    #ax3.plot(tdat, np.sqrt(py0 ** 2 + px0 ** 2) + np.sqrt(py1 ** 2 + px1 ** 2), label='total p')
+    #ax3.plot(tdat, Eq_out-Eq_out[0], label='eq')
+    #ax3.plot(tdat, Ec_out-Ec_out[0], label='ec')
+    #ax3.plot(tdat, Ec_out - Ec_out[0] + Eq_out - Eq_out[0])
+    #print(eq_db+ec_db)
+    ax3.set_title('Diabatic Py')
+    ax3.legend()
+    ax4.plot(tdat, px0_adb, label=r'$\langle 0 | P_{x}| 0 \rangle$')
+    ax4.plot(tdat, px1_adb, label=r'$\langle 1 | P_{x}| 1 \rangle$')
+    ax4.set_title('Adiabatic Px')
+    ax4.legend()
+    ax5.plot(tdat, py0_adb, label=r'$\langle 0 | P_{y}| 0 \rangle$')
+    ax5.plot(tdat, py1_adb, label=r'$\langle 1 | P_{y}| 1 \rangle$')
+    ax5.set_title('Adiabatic Py')
+    ax5.legend()
+    fig.set_figwidth(8)
+    fig.set_figheight(8)
+    plt.subplots_adjust(right=.99, left=0.05, top=0.95, bottom=0.05, hspace=.2, wspace=0.275)
+    plt.savefig(calcdir + '/plots.pdf')
+    plt.close()
+    print('Finished.')
+
+    return
+def genvizold():
     print('Generating Visualization...')
     run_num = np.load(calcdir + '/run_num.npy')
     for n in np.arange(0,run_num+1):
