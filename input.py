@@ -51,7 +51,7 @@ pinit=["+str(px)+","+str(py)+"]\r\n\
 calcdir = str(sim)+'_'+str(dim)+'_'+str(alpha)+'_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(rinit)+'_'+str(pinit)+'_'+str(Nx)+'_'+str(Ny)+'_'+str(xran)+'_'+str(yran)+'_'+str(dt)+'_'+str(dt_bath)+'_'+str(tmax)"
     filename = 'WP_' +str(alpha)+'_'+str(A)+ '_' + str(B) + '_' + str(W) + '_' + str(px) + '_' + str(py)+'.in'
     return out, filename
-def gen_wp_input_3(alpha,A,Bx,By,W,px,py,xran,yran,rinit,pxmax,pymax,dtfac,t_mult):
+def gen_wp_input_3(alpha,A,Bx,By,W,px,py,xran,yran,rinit,pxmax,pymax,dtfac,t_mult, init_diab=1):
     out = "dim = 2\r\n\
 sim = 'WP'\r\n\
 Nx = " + str(adjust_odd(int(pxmax*np.abs(xran[1]-xran[0])/np.pi)+1)) + "\r\n\
@@ -61,6 +61,7 @@ A = " + str(A) + "\r\n\
 Bx = " + str(Bx) + "\r\n\
 By = " + str(By) + "\r\n\
 W = " + str(W) + "\r\n\
+init_diab= " + str(init_diab) + "\r\n\
 dt_fac = "+str(dtfac)+"\r\n\
 tmax = np.round("+str(t_mult)+"*3*(3/("+str(px)+"/"+str(mass)+")),3)\r\n\
 dt = tmax/100\r\n\
@@ -134,7 +135,7 @@ calcdir = str(sim)+'_'+str(include_fmag)+'_'+str(dim)+'_'+str(alpha)+'_'+str(A)+
     filename = 'FSSH_'+str(alpha)+'_'+str(A)+'_'+str(B)+'_'+str(W)+'_'+str(px)+'_'+str(py)+'.in'
     return out, filename
 
-def gen_sh_input_3(alpha, A,Bx, By,W,N,px,py,rx,ry,rescale,t_mult,decohere):
+def gen_sh_input_3(alpha, A,Bx, By,W,N,px,py,rx,ry,rescale,t_mult,decohere, init_diab=1):
     out = "dim = 2\r\n\
 sim = 'FSSH'\r\n\
 N = " + str(N) + "\r\n\
@@ -142,6 +143,7 @@ A = " + str(A) + "\r\n\
 Bx = " + str(Bx) + "\r\n\
 By = " + str(By) + "\r\n\
 W = " + str(W) + "\r\n\
+init_diab = " + str(init_diab) + "\r\n\
 alpha=" + str(alpha) + "\r\n\
 rescale_method="+str(rescale)+"\r\n\
 tmax = np.round("+str(t_mult)+"*3*(3/("+str(px)+"/"+str(mass)+")),3)\r\n\

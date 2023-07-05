@@ -6,6 +6,7 @@ from tqdm import tqdm
 from numba import jit
 import numba as nb
 import math
+from functions import *
 
 args = sys.argv[1:]
 if not args:
@@ -43,28 +44,8 @@ rxgrid = rlist[:, 0].reshape(len(rxlist), len(rylist))
 rygrid = rlist[:, 1].reshape(len(rxlist), len(rylist))
 xdim = Nx + 1
 ydim = Ny + 1
-@nb.vectorize
-def erf_vec(a):
-    return math.erf(a)
-@jit(nopython=True, fastmath=True)
-def theta(x, y):
-    return (np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
-@jit(nopython=True, fastmath=True)
-def Vc(x,y):
-    return A*(1-alpha*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))))
-@jit(nopython=True, fastmath=True)
-def phi(x, y):
-    return W * y
-@jit(nopython=True, fastmath=True)
-def V_vec(r):
-    x = r[:, 0]
-    y = r[:, 1]
-    out_mat = np.ascontiguousarray(np.zeros((2, 2, len(x)))) + 0.0j
-    out_mat[0, 0, :] = -np.cos(theta(x, y)) * Vc(x,y)
-    out_mat[0, 1, :] = np.sin(theta(x, y)) * np.exp(1.0j * phi(x, y)) * Vc(x,y)
-    out_mat[1, 0, :] = np.sin(theta(x, y)) * np.exp(-1.0j * phi(x, y)) * Vc(x,y)
-    out_mat[1, 1, :] = np.cos(theta(x, y)) * Vc(x,y)
-    return out_mat
+
+
 V_list = V_vec(rlist)
 ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
 ev1 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
