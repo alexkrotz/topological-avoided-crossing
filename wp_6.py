@@ -9,7 +9,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
-from functions_4 import *
+from functions_6 import *
 
 num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)

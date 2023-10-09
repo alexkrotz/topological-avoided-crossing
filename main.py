@@ -119,7 +119,6 @@ def main():
                                     del runSim
                                     del genviz
                                     del sys.modules['wp_3ls_3']
-
     if sim == 'WP':
         if scan:
             if model == 1:
@@ -208,6 +207,7 @@ def main():
                                     del runSim
                                     del genviz
                                     del sys.modules['wp_3']
+            # Model B
             if model==4:
                 from input import gen_wp_input_3, write_input
                 for W in W_vals:
@@ -237,8 +237,68 @@ def main():
                                     del runSim
                                     del genviz
                                     del sys.modules['wp_4']
-
-
+            # Model C
+            if model==5:
+                from input import gen_wp_input_3, write_input
+                for W in W_vals:
+                    for B in B_vals:
+                        Bx = B[0]
+                        By = B[1]
+                        for A in A_vals:
+                            for alpha in alpha_vals:
+                                for p_vec in p_vec_list:
+                                    input_data, filename = gen_wp_input_3(alpha, A,Bx,By,W,p_vec[0],p_vec[1],xran,yran,r_init,pxmax,pymax,dtfac=dt_fac,t_mult=t_mult,init_diab=init_diab)
+                                    write_input(filename,input_data)
+                                    with open(filename) as f:
+                                        for line in f:
+                                            line1 = line.replace(" ", "")
+                                            line1 = line1.rstrip('\n')
+                                            name, value = line1.split("=")
+                                            exec(str(line), globals())
+                                    copyfile(filename, tmpfile)
+                                    from wp_5 import runSim, genviz
+                                    if not (os.path.exists(calcdir)):
+                                        os.mkdir(calcdir)
+                                        runSim()
+                                        genviz()
+                                    else:
+                                        genviz()
+                                    os.remove(tmpfile)
+                                    del runSim
+                                    del genviz
+                                    del sys.modules['wp_5']
+            # Model A
+            if model==6:
+                from input import gen_wp_input_3, write_input
+                for W in W_vals:
+                    for B in B_vals:
+                        Bx = B[0]
+                        By = B[1]
+                        for A in A_vals:
+                            for alpha in alpha_vals:
+                                for p_vec in p_vec_list:
+                                    input_data, filename = gen_wp_input_3(alpha, A, Bx, By, W, p_vec[0], p_vec[1], xran,
+                                                                          yran, r_init, pxmax, pymax, dtfac=dt_fac,
+                                                                          t_mult=t_mult, init_diab=init_diab)
+                                    write_input(filename, input_data)
+                                    with open(filename) as f:
+                                        for line in f:
+                                            line1 = line.replace(" ", "")
+                                            line1 = line1.rstrip('\n')
+                                            name, value = line1.split("=")
+                                            exec(str(line), globals())
+                                    copyfile(filename, tmpfile)
+                                    from wp_6 import runSim, genviz
+                                    if not (os.path.exists(calcdir)):
+                                        os.mkdir(calcdir)
+                                        runSim()
+                                        genviz()
+                                    else:
+                                        genviz()
+                                    os.remove(tmpfile)
+                                    del runSim
+                                    del genviz
+                                    del sys.modules['wp_6']
         else:
             # run wavepacket dynamics
             from wp_4 import runSim, genviz
@@ -438,7 +498,39 @@ def main():
                                     del runSim
                                     del genviz
                                     del sys.modules['fssh_3']
-            if model==4:
+            # MODEL B
+            if model == 4:
+                from input import gen_sh_input_3, write_input
+                for W in W_vals:
+                    for B in B_vals:
+                        Bx = B[0]
+                        By = B[1]
+                        for A in A_vals:
+                            for alpha in alpha_vals:
+                                for p_vec in p_vec_list:
+                                    input_data, filename = gen_sh_input_3(alpha, A, Bx, By, W, N, p_vec[0], p_vec[1],
+                                                                          r_init[0], r_init[1], rescale_method, t_mult,
+                                                                          decohere=False, init_diab=init_diab)
+                                    write_input(filename, input_data)
+                                    with open(filename) as f:
+                                        for line in f:
+                                            line1 = line.replace(" ", "")
+                                            line1 = line1.rstrip('\n')
+                                            name, value = line1.split("=")
+                                            exec(str(line), globals())
+                                    copyfile(filename, tmpfile)
+                                    from fssh_4 import runSim, genviz
+                                    if not (os.path.exists(calcdir)):
+                                        os.mkdir(calcdir)
+                                    if not (viz_only):
+                                        runSim()
+                                    genviz()
+                                    os.remove(tmpfile)
+                                    del runSim
+                                    del genviz
+                                    del sys.modules['fssh_4']
+            # MODEL C
+            if model==5:
                 from input import gen_sh_input_3, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -457,7 +549,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from fssh_4 import runSim, genviz
+                                    from fssh_5 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                     if not(viz_only):
@@ -466,7 +558,38 @@ def main():
                                     os.remove(tmpfile)
                                     del runSim
                                     del genviz
-                                    del sys.modules['fssh_4']
+                                    del sys.modules['fssh_5']
+            # MODEL A
+            if model==6:
+                from input import gen_sh_input_3, write_input
+                for W in W_vals:
+                    for B in B_vals:
+                        Bx = B[0]
+                        By = B[1]
+                        for A in A_vals:
+                            for alpha in alpha_vals:
+                                for p_vec in p_vec_list:
+                                    input_data, filename = gen_sh_input_3(alpha, A, Bx, By, W, N, p_vec[0], p_vec[1],
+                                                                          r_init[0], r_init[1], rescale_method, t_mult,
+                                                                          decohere=False, init_diab=init_diab)
+                                    write_input(filename, input_data)
+                                    with open(filename) as f:
+                                        for line in f:
+                                            line1 = line.replace(" ", "")
+                                            line1 = line1.rstrip('\n')
+                                            name, value = line1.split("=")
+                                            exec(str(line), globals())
+                                    copyfile(filename, tmpfile)
+                                    from fssh_6 import runSim, genviz
+                                    if not (os.path.exists(calcdir)):
+                                        os.mkdir(calcdir)
+                                    if not (viz_only):
+                                        runSim()
+                                    genviz()
+                                    os.remove(tmpfile)
+                                    del runSim
+                                    del genviz
+                                    del sys.modules['fssh_6']
         else:
             # run FSSH dynamics
             from fssh_4 import runSim, genviz

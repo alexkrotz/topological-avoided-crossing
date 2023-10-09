@@ -2,11 +2,14 @@ import numpy as np
 import itertools
 import glob
 import os
+import sys
 import scipy
 import scipy.special
 
-
-
+args = sys.argv[1:]
+if not args:
+    print('Usage: python sh_obs.py data_dir')
+data_dir = args[0]
 def get_vals_sh(inputfile, loc):
     with open(inputfile) as f:
         for line in f:
@@ -69,6 +72,48 @@ def get_vals_sh(inputfile, loc):
         print('ERROR not stable', np.abs(lastpop_m1_0 - lastpop_0), np.abs(lastpop_m1_1 - lastpop_1), inputfile)
 
     return pinit[0], lastpop_0, lastpop_1, px1, py1, px0, py0 #, rx1, ry1, rx0, ry0  # px1 + px0, py1 + py0
+
+inputfiles_sh = glob.glob('./'+data_dir+'/p*/FSSH_*.in')
+if len(inputfiles_sh) > 0:
+    print('Found ' + data_dir +' files...')
+else:
+    print('Data not found')
+    exit()
+
+px_list_sh = np.zeros((len(inputfiles_sh)))
+pop0_list_sh = np.zeros((len(inputfiles_sh)))
+pop1_list_sh = np.zeros((len(inputfiles_sh)))
+tpx1_list_sh = np.zeros((len(inputfiles_sh)))
+tpy1_list_sh = np.zeros((len(inputfiles_sh)))
+tpx0_list_sh = np.zeros((len(inputfiles_sh)))
+tpy0_list_sh = np.zeros((len(inputfiles_sh)))
+n=0
+for file in inputfiles_sh:
+    print('loading '+file)
+    px_list_sh[n], pop0_list_sh[n], pop1_list_sh[n], tpx1_list_sh[n], tpy1_list_sh[n], tpx0_list_sh[n], tpy0_list_sh[n]= get_vals_sh(file,'./'+data_dir + '/')
+    n += 1
+px_sort = px_list_sh.argsort()
+px_list_sh = px_list_sh[px_sort]
+pop0_list_sh = pop0_list_sh[px_sort]
+pop1_list_sh = pop1_list_sh[px_sort]
+tpx1_list_sh = tpx1_list_sh[px_sort]
+tpy1_list_sh = tpy1_list_sh[px_sort]
+tpx0_list_sh = tpx0_list_sh[px_sort]
+tpy0_list_sh = tpy0_list_sh[px_sort]
+
+if not(os.path.exists('./data/')):
+    os.mkdir('./data/')
+filename = data_dir.replace(".","")
+np.savetxt('./data/px_list_'+filename+'_sh.csv',px_list_sh)
+np.savetxt('./data/pop0_list_'+filename+'_sh.csv',pop0_list_sh)
+np.savetxt('./data/pop1_list_'+filename+'_sh.csv',pop1_list_sh)
+np.savetxt('./data/tpx1_list_'+filename+'_sh.csv',tpx1_list_sh)
+np.savetxt('./data/tpy1_list_'+filename+'_sh.csv',tpy1_list_sh)
+np.savetxt('./data/tpx0_list_'+filename+'_sh.csv',tpx0_list_sh)
+np.savetxt('./data/tpy0_list_'+filename+'_sh.csv',tpy0_list_sh)
+
+exit()
+
 
 save_01 = False
 save_005=False

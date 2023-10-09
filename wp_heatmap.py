@@ -6,7 +6,7 @@ from tqdm import tqdm
 from numba import jit
 import numba as nb
 import math
-from functions import *
+from functions_4 import *
 
 args = sys.argv[1:]
 if not args:

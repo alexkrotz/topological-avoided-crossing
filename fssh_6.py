@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
 import itertools
-from functions_4 import *
+from functions_6 import *
 
 num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
@@ -401,7 +401,7 @@ def get_phase(dkkq):
 #@jit(nopython=True) # joe's method
 def method2_rescale(dkkqx, dkkqy, p,pos,ev_diff,k,act_surf_ind,act_surf, hop_list, r, flag):
     dkkq = np.array([dkkqx,dkkqy])
-    eta = get_phase(dkkq)
+    eta = get_phase(dkkq) # find the gauge that maximizes the norm of the real part of the derivative coupling
     dkkq=np.real(np.exp(1.0j*eta)*dkkq)
     akkq = (1 / (2 * mass)) * np.sum(dkkq * dkkq)
     bkkq = np.sum((p[pos] / mass) * dkkq)

@@ -2,7 +2,12 @@ import numpy as np
 import itertools
 import glob
 import os
+import sys
 
+args = sys.argv[1:]
+if not args:
+    print('Usage: python wp_obs.py data_dir')
+data_dir = args[0]
 def get_vals_wp(inputfile, loc):
     with open(inputfile) as f:
         for line in f:
@@ -90,6 +95,62 @@ def get_vals_wp(inputfile, loc):
 
     return pinit[0], lastpop_0, lastpop_1, px1, py1, px0, py0, rx1, ry1, rx0, ry0  # px1 + px0, py1 + py0
 
+
+inputfiles_wp = glob.glob('./'+data_dir+'/p*/WP_*.in')
+if len(inputfiles_wp) > 0:
+    print('Found ' + data_dir +' files...')
+else:
+    print('Data not found')
+    exit()
+px_list_wp = np.zeros((len(inputfiles_wp)))
+pop0_list_wp = np.zeros((len(inputfiles_wp)))
+pop1_list_wp = np.zeros((len(inputfiles_wp)))
+tpx1_list_wp = np.zeros((len(inputfiles_wp)))
+tpy1_list_wp = np.zeros((len(inputfiles_wp)))
+tpx0_list_wp = np.zeros((len(inputfiles_wp)))
+tpy0_list_wp = np.zeros((len(inputfiles_wp)))
+trx1_list_wp = np.zeros((len(inputfiles_wp)))
+try1_list_wp = np.zeros((len(inputfiles_wp)))
+trx0_list_wp = np.zeros((len(inputfiles_wp)))
+try0_list_wp = np.zeros((len(inputfiles_wp)))
+
+n=0
+for file in inputfiles_wp:
+    px_list_wp[n], pop0_list_wp[n], pop1_list_wp[n], tpx1_list_wp[n], tpy1_list_wp[n], tpx0_list_wp[n], tpy0_list_wp[n],\
+    trx1_list_wp[n], try1_list_wp[n], trx0_list_wp[n], try0_list_wp[n]= get_vals_wp(file,'./'+data_dir+'/')
+    n += 1
+px_sort = px_list_wp.argsort()
+px_list_wp = px_list_wp[px_sort]
+pop0_list_wp = pop0_list_wp[px_sort]
+pop1_list_wp = pop1_list_wp[px_sort]
+tpx1_list_wp = tpx1_list_wp[px_sort]
+tpy1_list_wp = tpy1_list_wp[px_sort]
+tpx0_list_wp = tpx0_list_wp[px_sort]
+tpy0_list_wp = tpy0_list_wp[px_sort]
+trx1_list_wp = trx1_list_wp[px_sort]
+try1_list_wp = try1_list_wp[px_sort]
+trx0_list_wp = trx0_list_wp[px_sort]
+try0_list_wp = try0_list_wp[px_sort]
+print(px_list_wp)
+print(tpx1_list_wp)
+print(tpx0_list_wp)
+if not(os.path.exists('./data/')):
+    os.mkdir('./data/')
+filename = data_dir.replace(".","")
+np.savetxt('./data/px_list_'+filename+'_wp.csv',px_list_wp)
+np.savetxt('./data/pop0_list_'+filename+'_wp.csv',pop0_list_wp)
+np.savetxt('./data/pop1_list_'+filename+'_wp.csv',pop1_list_wp)
+np.savetxt('./data/tpx1_list_'+filename+'_wp.csv',tpx1_list_wp)
+np.savetxt('./data/tpy1_list_'+filename+'_wp.csv',tpy1_list_wp)
+np.savetxt('./data/tpx0_list_'+filename+'_wp.csv',tpx0_list_wp)
+np.savetxt('./data/tpy0_list_'+filename+'_wp.csv',tpy0_list_wp)
+np.savetxt('./data/trx1_list_'+filename+'_wp.csv',trx1_list_wp)
+np.savetxt('./data/try1_list_'+filename+'_wp.csv',try1_list_wp)
+np.savetxt('./data/trx0_list_'+filename+'_wp.csv',trx0_list_wp)
+np.savetxt('./data/try0_list_'+filename+'_wp.csv',try0_list_wp)
+
+
+exit()
 
 inputfiles_wp_A01 = glob.glob('./A0.1/p*/WP_*.in')
 save_01 = False

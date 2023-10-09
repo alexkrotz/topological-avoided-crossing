@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
 import itertools
-from functions_4 import *
+from functions_5 import *
 
 num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
