@@ -27,7 +27,8 @@ sigma = 1
 #mass = 1000
 mass = 1
 A = A*1000
-#np.random.seed(1234)
+np.random.seed(1234)
+print('Random Seed: ', 1234)
 print(A)
 
 

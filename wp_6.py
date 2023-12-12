@@ -57,16 +57,23 @@ def wp0(r):
 #xran=[-5,5]
 #Nx = Nx; # N
 #Ny = Ny;
-Lx = xran[1]-xran[0]
-Ly = yran[1]-yran[0]
+Lx = xran[1]-xran[0] # length along x
+Ly = yran[1]-yran[0] # length along y
+# j integers for fourier numbers
 jxlist = np.arange(0,Nx-1+1,1,dtype=np.float64)# j = 0,1,...,N-1
 jylist = np.arange(0,Ny-1+1,1,dtype=np.float64)
+# k wavevector values
 kxlist = np.concatenate((np.arange(0,Nx/2+1,1,dtype=np.float64),np.arange((-Nx/2),0,dtype=np.float64)))*2*np.pi/Lx#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
 kylist = np.concatenate((np.arange(0,Ny/2+1,1,dtype=np.float64),np.arange((-Ny/2),0,dtype=np.float64)))*2*np.pi/Ly#np.arange(0,Nx-1+1,1)# k = 0,1,...,N-1
+# list of k points
 klist = np.array(tuple(itertools.product(kxlist,kylist)),dtype=np.float64)
+# k_{x} grid
 kxgrid = klist[:,0].reshape(len(kxlist),len(kylist))
+# k_{y} grid
 kygrid = klist[:,1].reshape(len(kxlist),len(kylist))
+# compute |k|^{2}
 knorm = np.linalg.norm(klist,axis=1)**2
+# reshape into a grid
 kgrid = knorm.reshape(len(kxlist),len(kylist))
 xjlist = 2*np.pi*jxlist/Nx
 yjlist = 2*np.pi*jylist/Ny
