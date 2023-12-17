@@ -76,8 +76,8 @@ def get_vals_wp(inputfile, loc):
         wpgrid = wplist.reshape(Nx + 1, Ny + 1)
         return np.real(np.sum(np.conj(wpgrid) * rygrid * wpgrid) / (np.sum(np.abs(wpgrid) ** 2)))
 
-    psi = np.load(calcdir_full + '/psi.npy')
-    tdat = np.load(calcdir_full + '/tdat.npy')
+    psi = np.load(calcdir_full + '/psi.npy') # load wavefunction
+    tdat = np.load(calcdir_full + '/tdat.npy') # load time
     px1 = get_px(psi[-1][1])
     py1 = get_py(psi[-1][1])
     px0 = get_px(psi[-1][0])
@@ -90,6 +90,7 @@ def get_vals_wp(inputfile, loc):
     lastpop_1 = np.sum(np.abs(psi[-1][1]) ** 2)
     lastpop_m1_0 = np.sum(np.abs(psi[-2][0]) ** 2)
     lastpop_m1_1 = np.sum(np.abs(psi[-2][1]) ** 2)
+    # determine if the populations are stable (ie fully transmitted and not leaving the grid)
     if np.abs(lastpop_m1_0 - lastpop_0) > 1e-4 or np.abs(lastpop_m1_1 - lastpop_1) > 1e-4:
         print('ERROR not stable', np.abs(lastpop_m1_0 - lastpop_0), np.abs(lastpop_m1_1 - lastpop_1))
 
@@ -137,21 +138,21 @@ print(tpx0_list_wp)
 if not(os.path.exists('./data/')):
     os.mkdir('./data/')
 filename = data_dir.replace(".","")
-np.savetxt('./data/px_list_'+filename+'_wp.csv',px_list_wp)
-np.savetxt('./data/pop0_list_'+filename+'_wp.csv',pop0_list_wp)
-np.savetxt('./data/pop1_list_'+filename+'_wp.csv',pop1_list_wp)
-np.savetxt('./data/tpx1_list_'+filename+'_wp.csv',tpx1_list_wp)
-np.savetxt('./data/tpy1_list_'+filename+'_wp.csv',tpy1_list_wp)
-np.savetxt('./data/tpx0_list_'+filename+'_wp.csv',tpx0_list_wp)
-np.savetxt('./data/tpy0_list_'+filename+'_wp.csv',tpy0_list_wp)
-np.savetxt('./data/trx1_list_'+filename+'_wp.csv',trx1_list_wp)
-np.savetxt('./data/try1_list_'+filename+'_wp.csv',try1_list_wp)
-np.savetxt('./data/trx0_list_'+filename+'_wp.csv',trx0_list_wp)
-np.savetxt('./data/try0_list_'+filename+'_wp.csv',try0_list_wp)
+np.savetxt('./data/px_list_'+filename+'_wp.csv',px_list_wp) # initial x direction momentum
+np.savetxt('./data/pop0_list_'+filename+'_wp.csv',pop0_list_wp) # transmitted population on lower diabatic surface
+np.savetxt('./data/pop1_list_'+filename+'_wp.csv',pop1_list_wp) # transmitted population on upper diabatic surface
+np.savetxt('./data/tpx1_list_'+filename+'_wp.csv',tpx1_list_wp) # transmitted p_x on upper diabatic surface
+np.savetxt('./data/tpy1_list_'+filename+'_wp.csv',tpy1_list_wp) # transmitted p_y on upper diabatic surface
+np.savetxt('./data/tpx0_list_'+filename+'_wp.csv',tpx0_list_wp) # transmitted p_x on lower diabatic surface
+np.savetxt('./data/tpy0_list_'+filename+'_wp.csv',tpy0_list_wp) # transmitted p_y on lower diabatic surface
+np.savetxt('./data/trx1_list_'+filename+'_wp.csv',trx1_list_wp) # transmitted r_x on upper diabatic surface
+np.savetxt('./data/try1_list_'+filename+'_wp.csv',try1_list_wp) # transmitted r_y on upper diabatic surface
+np.savetxt('./data/trx0_list_'+filename+'_wp.csv',trx0_list_wp) # transmitted r_x on lower diabatic surface
+np.savetxt('./data/try0_list_'+filename+'_wp.csv',try0_list_wp) # transmitted r_y on lower diabatic surface
 
 
 exit()
-
+# below is deprecated
 inputfiles_wp_A01 = glob.glob('./A0.1/p*/WP_*.in')
 save_01 = False
 if len(inputfiles_wp_A01) > 0:

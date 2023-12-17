@@ -25,6 +25,8 @@ def main():
     else:
         scan=False
     if sim == 'WP3ls':
+        print('Deprecated')
+        exit()
         if scan:
             if model == 1:
                 from input import gen_wp_input_3ls, write_input
@@ -122,6 +124,8 @@ def main():
     if sim == 'WP':
         if scan:
             if model == 1:
+                print('Deprecated')
+                exit()
                 from input import gen_wp_input, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -149,6 +153,8 @@ def main():
                                 del genviz
                                 del sys.modules['wp']
             if model == 2:
+                print('Deprecated')
+                exit()
                 from input import gen_wp_input_2, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -177,6 +183,8 @@ def main():
                                     del genviz
                                     del sys.modules['wp_2']
             if model == 3:
+                print('Deprecated')
+                exit()
                 from input import gen_wp_input_3, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -300,6 +308,8 @@ def main():
                                     del genviz
                                     del sys.modules['wp_6']
         else:
+            print('Deprecated')
+            exit()
             # run wavepacket dynamics
             from wp_4 import runSim, genviz
             if not(os.path.exists(calcdir)):
@@ -311,6 +321,8 @@ def main():
             #os.remove(tmpfile)
             sys.exit()
     if sim == 'MF':
+        print('Deprecated')
+        exit()
         # run mean-field dynamics
         from mf import runSim, genviz
         if not (os.path.exists(calcdir)):
@@ -324,6 +336,8 @@ def main():
         os.remove(tmpfile)
         sys.exit()
     if sim == 'FSSH3ls':
+        print('Deprecated')
+        exit()
         if model == 1:
             from input import gen_sh_input_3ls, write_input
             for W in W_vals:
@@ -419,6 +433,8 @@ def main():
     if sim == 'FSSH':
         if scan:
             if model==1:
+                print('Deprecated')
+                exit()
                 from input import gen_sh_input, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -443,6 +459,8 @@ def main():
                                 del genviz
                                 del sys.modules['fssh']
             if model == 2:
+                print('Deprecated')
+                exit()
                 from input import gen_sh_input_2, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -469,6 +487,8 @@ def main():
                                     del genviz
                                     del sys.modules['fssh_2']
             if model == 3:
+                print('Deprecated')
+                exit()
                 from input import gen_sh_input_3, write_input
                 for W in W_vals:
                     for B in B_vals:
@@ -591,12 +611,7 @@ def main():
                                     del genviz
                                     del sys.modules['fssh_6']
         else:
-            # run FSSH dynamics
-            from fssh_4 import runSim, genviz
-            if not (os.path.exists(calcdir)):
-                os.mkdir(calcdir)
-            runSim()
-            genviz()
+            print('Deprecated')
             os.remove(tmpfile)
             sys.exit()
 

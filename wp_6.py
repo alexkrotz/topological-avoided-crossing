@@ -25,7 +25,7 @@ A = A*1000
 
 
 
-
+# Eigenvectors of H
 @jit(nopython=True, fastmath=True)
 def V_vec(r):
     x = r[:, 0]
@@ -42,12 +42,13 @@ sigma = 1
 #mass = 1000
 mass = 1
 
+# initial wavepacket on the upper diabatic surface
 def wp1(r):
     if init_diab == 1:
         return np.exp((1.0j/hbar)*np.dot(r,pinit))*np.exp(-(1/sigma**2)*np.linalg.norm(r - rinit,axis=1)**2)
     if init_diab == 0:
         return 0 * r[:,0]
-
+# initial wavepacket on the lower diabatic surface
 def wp0(r):
     if init_diab == 0:
         return np.exp((1.0j/hbar)*np.dot(r,pinit))*np.exp(-(1/sigma**2)*np.linalg.norm(r - rinit,axis=1)**2)
@@ -92,13 +93,13 @@ rlist = np.array(tuple(itertools.product(xlist, ylist)),dtype=np.float64)
 rxgrid = rlist[:, 0].reshape(len(rxlist), len(rylist))
 rygrid = rlist[:, 1].reshape(len(rxlist), len(rylist))
 V_list = V_vec(rlist)
-ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
+ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.float64) # adiabatic surfaces
 ev1 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
-evecs = np.zeros((2,2,len(V_list[0,0,:])),dtype=complex)
-H00 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
+evecs = np.zeros((2,2,len(V_list[0,0,:])),dtype=complex) # eigenvectors
+H00 = np.zeros(len(V_list[0,0,:]),dtype=np.float64) # diabatic surfacces
 H11 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
 for n in range(len(V_list[0,0,:])):
-    eigvals,eigvecs = np.linalg.eigh(V_list[:,:,n])
+    eigvals,eigvecs = np.linalg.eigh(V_list[:,:,n]) # diagonalize Hamiltonian
     evecs[:,:,n] = eigvecs
     ev0[n] = eigvals[0]
     ev1[n] = eigvals[1]
@@ -106,21 +107,21 @@ for n in range(len(V_list[0,0,:])):
     H11[n] = np.real(V_list[1,1,n])
 
 
-def get_psi_adb(psi_db):
+def get_psi_adb(psi_db): # transform diabatic wavefunction to adiabatic wavefunction
     psi_adb = np.zeros_like(psi_db,dtype=complex)
     for n in range(np.shape(psi_db)[-1]):
         psi_adb[:,n] = np.matmul(np.transpose(np.conj(evecs[:,:,n])),psi_db[:,n])
     return psi_adb
 
 
-def normalize(state_list):
+def normalize(state_list): # normalize a wavefunction to dx=1 integration measure
     tot = np.sum(np.abs(state_list)**2)
     return state_list/np.sqrt(tot)
 
-
+# initialize wavefunction
 state_list = normalize(np.array([wp0(rlist), wp1(rlist)],dtype=complex))
 
-
+# computes laplacian \nabla^{2}\psi
 def get_grad(wplist): ## kgrid is k^2
     xdim = Nx+1
     ydim = Ny+1
@@ -132,6 +133,7 @@ def adjust_odd(num):
         return num
     else:
         return num + 1
+# for transmited values we compute a grid for x>1
 r_min = 1.0
 Nx2 = adjust_odd(len(rxlist[rxlist > r_min]))
 rxmin = rxlist[len(rxlist) - Nx2 - 2]
@@ -142,14 +144,14 @@ kxlist2 = np.concatenate((np.arange(0, Nx2 / 2 + 1, 1),
 klist2 = np.array(tuple(itertools.product(kxlist2, kylist)))
 kxgrid2 = klist2[:, 0].reshape(len(kxlist2), len(kylist))
 kygrid2 = klist2[:, 1].reshape(len(kxlist2), len(kylist))
-def get_tx_grid(grid):
+def get_tx_grid(grid): # accepts full grid, returns grid for x> xmin
     tx_grid = grid[rxgrid > rxmin]
     return tx_grid.reshape((int(len(tx_grid)/len(rylist)),len(rylist)))
-def get_px(wplist):
+def get_px(wplist): # computes p_{x} on the transmitted grid
     wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid2 * wpgrid_k)) / (np.sum(np.abs(wpgrid) ** 2)))
-def get_py(wplist):
+def get_py(wplist): # computes p_{y} on the transmitted grid
     wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kygrid2 * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
@@ -160,14 +162,14 @@ state_vec_adb = get_psi_adb(state_list)
 #print('Adiabatic: ')
 #print('<0|Px|0>: ',np.round(get_px(state_vec_adb[0]),5),' <0|Py|0>: ', np.round(get_py(state_vec_adb[0]),5))
 #print('<1|Px|1>: ',np.round(get_px(state_vec_adb[1]),5),' <1|Py|1>: ', np.round(get_py(state_vec_adb[1]),5))
-def get_grad_state(state_list):
+def get_grad_state(state_list): # computes laplacian of a wavefunction \nabla^{2}\psi
     out_list = np.zeros_like(state_list,dtype=complex)
     for n in range(len(state_list)):
         out_list[n] = get_grad(state_list[n])
     return out_list
 
 
-def get_V_state(state_list):
+def get_V_state(state_list): # computes action of H on a wavefunction H\psi
     out_list = np.zeros_like(state_list,dtype=complex)
     for n in range(np.shape(V_list)[-1]):
         v = V_list[:,:,n]
@@ -178,7 +180,7 @@ def get_V_state(state_list):
 pmax = np.max(np.abs(state_list)**2)
 
 
-def timestep(state, dt):
+def timestep(state, dt): # expensive propagation only for first timestep
     grad = get_grad_state(state)
     pot = get_V_state(state)
     out_vec = np.zeros_like(grad,dtype=complex)
@@ -197,7 +199,7 @@ def get_E(state):
 
 
 #@jit(nopython=True,fastmath=True)
-def timestep2(state_n,state_nm1,dt):
+def timestep2(state_n,state_nm1,dt): # inexpensive propagation
     grad = get_grad_state(state_n)
     pot = get_V_state(state_n)
     state_np1 = state_nm1 + (1.0j*grad - 1.0j*pot)*2*dt

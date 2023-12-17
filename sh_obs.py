@@ -113,7 +113,7 @@ np.savetxt('./data/tpx0_list_'+filename+'_sh.csv',tpx0_list_sh)
 np.savetxt('./data/tpy0_list_'+filename+'_sh.csv',tpy0_list_sh)
 
 exit()
-
+## old code below ###
 
 save_01 = False
 save_005=False

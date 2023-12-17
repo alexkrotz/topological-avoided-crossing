@@ -31,7 +31,7 @@ np.random.seed(1234)
 print('Random Seed: ', 1234)
 print(A)
 
-
+# define wavepackets
 
 def wp1(r):
     return np.exp((1.0j / hbar) * np.dot(r, pinit)) * np.exp(-(1 / sigma ** 2) * np.linalg.norm(r - rinit, axis=1) ** 2)
@@ -40,7 +40,7 @@ def wp1(r):
 def wp0(r):
     return (0.0 + 0.0j) * np.linalg.norm(r, axis=1)
 
-
+# wigner sampling of gaussian wavepacket
 def get_rp(r0, p0, n):
     x = np.random.normal(r0[0], sigma / 2, n)
     y = np.random.normal(r0[1], sigma / 2, n)
@@ -49,7 +49,7 @@ def get_rp(r0, p0, n):
     return np.transpose(np.array([x, y])), np.transpose(np.array([px, py]))
 
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=True, fastmath=True) # computes expectation value of dV
 def matprod(state_vec, dV):
     dV00 = dV[0, 0, :]
     dV10 = dV[1, 0, :]
@@ -66,13 +66,13 @@ def get_quantumForce(act_surf_ind,r): #if act_surf_ind == 0, return -F1, act_sur
     x = r[:,0]
     y = r[:,1]
     fact = (act_surf_ind * 2)-1
-    F1 = np.zeros(np.shape(r))
+    F1 = np.zeros(np.shape(r)) ### for models A B and C this is always 0, will have to change to study other models!!
     #F1[:,0] = 2*A*alpha*(Bx**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * x * fact
     #F1[:,1] = 2*A*alpha*(By**2)*np.exp(-1*((Bx**2)*(x**2) + (By**2)*(y**2))) * y * fact
     return F1
 
 
-def get_Fmag(r,p,act_surf_ind):
+def get_Fmag(r,p,act_surf_ind): # compute magnetic force
     px = p[:,0]
     py = p[:,1]
     rx = r[:,0]
@@ -90,7 +90,7 @@ def get_Fmag(r,p,act_surf_ind):
     out[pos1,1] = f1y[pos1]
     return out
 
-def timestepRK_C(x, px, Fx, dt):
+def timestepRK_C(x, px, Fx, dt): # evolve classical coordinates
     dim = len(x)
 
     def f_h(t, Y):
@@ -104,7 +104,7 @@ def timestepRK_C(x, px, Fx, dt):
     return q2, p2
 
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=True, fastmath=True) # RK4 solver
 def RK4(q_bath, p_bath, Fq, dt):
     K1 = dt * (p_bath / (mass))
     L1 = -dt * (Fq)  # [wn2] is w_alpha ^ 2
@@ -120,7 +120,7 @@ def RK4(q_bath, p_bath, Fq, dt):
 
 
 # @jit(nopython=True,fastmath=True)
-def prop_C(r, p, F, dt):
+def prop_C(r, p, F, dt): # evolve classical coordinates
     r_out = np.zeros_like(r)
     p_out = np.zeros_like(p)
     for n in range(len(r[0])):
@@ -129,21 +129,21 @@ def prop_C(r, p, F, dt):
     return r_out, p_out
 
 
-def get_V_state(state_list, r):
+def get_V_state(state_list, r): # compute action of V on state_list
     V_list = V_vec(r)
     return np.einsum('ijn,jn->in', V_list, state_list)
 
 
-def get_E(state_list, r):
+def get_E(state_list, r): # compute energy
     V_list = V_vec(r)
     return np.real(np.sum(np.einsum('in,in->n', np.einsum('ijn,jn->in', V_list, state_list), np.conj(state_list))))
 
-def get_E_adb(rho_adb,evals):
+def get_E_adb(rho_adb,evals): # compute energy in adiabatic basis
     return np.real(np.sum(rho_adb[0,0,:]*evals[0,:] +  rho_adb[1,1,:]*evals[1,:]))
 # print(state_list[:,2])
 
 
-def prop_Q0(state, r, dt):
+def prop_Q0(state, r, dt): # evolve wavefunction
     pot = get_V_state(state, r)
     out_vec = np.zeros_like(state)
     for n in range(np.shape(state)[-1]):
@@ -154,18 +154,18 @@ def prop_Q0(state, r, dt):
     return out_vec
 
 
-def prop_Q(state_n, state_nm1, r, dt):
+def prop_Q(state_n, state_nm1, r, dt): # evolve wavefunction (inexpensive)
     pot = get_V_state(state_n, r)
     state_np1 = state_nm1 + ((-1.0j * pot) * 2 * dt)
     return state_np1
 
 
-def wigner(r, p):
+def wigner(r, p): # wigner distribution
     return (1 / (np.pi * hbar)) * np.exp(-(1 / 2) * (np.linalg.norm(r - rinit) / (sigma / 2)) ** 2) * np.exp(
         -(1 / 2) * (np.linalg.norm(p - pinit) / (hbar / sigma)) ** 2)
 
 
-def wigner_vec(r, p):
+def wigner_vec(r, p): # compute wigner amplitude for r and p
     out_vec = np.zeros((len(r)))
     for n in range(len(r)):
         out_vec[n] = wigner(r[n], p[n])
@@ -233,7 +233,7 @@ def get_evecs(r):
         evals[:, n] = eigvals
     return evals, evecs
 @jit(nopython=True,fastmath=True)
-def get_evecs_analytical(r):
+def get_evecs_analytical(r): # analytic eigenvectors of V
     x = r[:,0]
     y = r[:,1]
     evec_0 = np.ascontiguousarray(np.zeros((2,len(r))))+0.0j
@@ -252,7 +252,7 @@ def get_evecs_analytical(r):
 
 
 @jit(nopython=True,fastmath=True)
-def get_dkk_analytical(r):
+def get_dkk_analytical(r): # analytic nonadiabatic coupling of V
     x = r[:,0]
     y = r[:,1]
     dkkx = (1/2)*(1.0j*np.sin(theta(x,y))*dphi_x(x,y) + dtheta_x(x,y))
@@ -262,7 +262,7 @@ def get_dkk_analytical(r):
 
 
 @jit(nopython=True)
-def vec_db_to_adb(psi_db, evecs):
+def vec_db_to_adb(psi_db, evecs): # transform diabatic wavefunction to adiabatic wavefunction
     psi_adb = np.ascontiguousarray(np.zeros(np.shape(psi_db)))+0.0j
     evecs = np.conj(evecs)
     psi_adb[0, :] = (evecs[0, 0, :] * psi_db[0, :]) + (evecs[1, 0, :] * psi_db[1, :])
@@ -271,7 +271,7 @@ def vec_db_to_adb(psi_db, evecs):
     #    psi_adb[:, n] = np.dot(np.transpose(np.conj(np.ascontiguousarray(evecs[:, :, n]))),np.ascontiguousarray(psi_db[:, n]))
     return psi_adb
 @jit(nopython=True)
-def vec_adb_to_db(psi_adb, evecs):
+def vec_adb_to_db(psi_adb, evecs): # transform adiabatic wavefunction to diabatic wavefunction
     psi_db = np.ascontiguousarray(np.zeros(np.shape(psi_adb)))+0.0j
     psi_db[0, :] = (evecs[0, 0, :] * psi_adb[0, :]) + (evecs[0, 1, :] * psi_adb[1, :])
     psi_db[1, :] = (evecs[1, 0, :] * psi_adb[0, :]) + (evecs[1, 1, :] * psi_adb[1, :])
@@ -532,17 +532,17 @@ def hop(r,p,cg_db,act_surf,act_surf_ind, hop_list,p0):
     cg_adb[0, :] = evals_exp[0, :] * state_adb_t0[0, :]
     cg_adb[1, :] = evals_exp[1, :] * state_adb_t0[1, :]
     cg_db = vec_adb_to_db(cg_adb, evecs)
-    rand = np.random.rand(len(r))
-    dkkx_list, dkky_list = get_dkk_analytical(r)
-    b_surf_ind = (act_surf_ind - 1 ) * -1
+    rand = np.random.rand(len(r)) # compute random number for each trajectory
+    dkkx_list, dkky_list = get_dkk_analytical(r) # compute nonadiabatic coupling
+    b_surf_ind = (act_surf_ind - 1 ) * -1 # compute destination surface index
     cg_adb_a = get_cgadb_act(cg_adb,act_surf_ind)#cg_adb[act_surf_ind,ran]
     cg_adb_b = get_cgadb_act(cg_adb,b_surf_ind)#cg_adb[b_surf_ind,ran]
     pdab = np.ascontiguousarray(np.zeros(np.shape(act_surf_ind)))+0.0j
     ind_0 = np.where(act_surf_ind == 0)
-    pdab[ind_0] = (p[:,0][ind_0]/mass) * dkkx_list[ind_0] + (p[:,1][ind_0]/mass) * dkky_list[ind_0]
+    pdab[ind_0] = (p[:,0][ind_0]/mass) * dkkx_list[ind_0] + (p[:,1][ind_0]/mass) * dkky_list[ind_0] # compute p\dot d_{ab}
     ind_1 = np.where(act_surf_ind == 1)
-    pdab[ind_1] = (p[:,0][ind_1]/mass) * -np.conj(dkkx_list[ind_1]) + (p[:,1][ind_1]/mass) * -np.conj(dkky_list[ind_1])
-    hop_prob =  2 * dt_bath * np.real((cg_adb_b/cg_adb_a) * (pdab))
+    pdab[ind_1] = (p[:,0][ind_1]/mass) * -np.conj(dkkx_list[ind_1]) + (p[:,1][ind_1]/mass) * -np.conj(dkky_list[ind_1]) #compute p\dot d_{ba}
+    hop_prob =  2 * dt_bath * np.real((cg_adb_b/cg_adb_a) * (pdab)) # compute hopping probability
     hop_prob = nan_num(hop_prob)
     hop_list_prev = np.copy(hop_list)
     if decohere == 2:
