@@ -9,15 +9,18 @@ import numpy as np
 
 args = sys.argv[1:]
 if not args:
-    print('Usage: python wp_heatmap.py inputfile')
+    print('Usage: python sh_heatmap.py inputfile')
 inputfile = args[0]
-
+model = eval(args[-1])
+num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
 with open(inputfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')
         name, value = line1.split("=")
         exec(str(line), globals())
+copyfile(inputfile, tmpfile)
 print(calcdir)
 
 

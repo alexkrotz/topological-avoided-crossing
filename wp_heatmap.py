@@ -3,24 +3,37 @@ import numpy as np
 import itertools
 import os
 from tqdm import tqdm
+from shutil import copyfile
 from numba import jit
 import numba as nb
 import math
-from functions_6 import *
+import glob
 
 args = sys.argv[1:]
 if not args:
     print('Usage: python wp_heatmap.py inputfile')
 inputfile = args[0]
-
+model = eval(args[-1])
+num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1
+tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
 with open(inputfile) as f:
     for line in f:
         line1 = line.replace(" ", "")
         line1 = line1.rstrip('\n')
         name, value = line1.split("=")
         exec(str(line), globals())
+copyfile(inputfile, tmpfile)
 print(calcdir)
 
+if model==6:
+    from functions_6 import *
+elif model==5:
+    from functions_5 import *
+elif model==4:
+    from functions_4 import *
+else:
+    print('model: ', model)
+    exit()
 px_0 = pinit[0]
 #loc = loc + 'p' + str(int(px_0)) + '/'
 calcdir_full = calcdir #loc + calcdir
