@@ -6,7 +6,8 @@ import math
 import itertools
 import sys
 import numpy as np
-impor glob
+import glob
+from shutil import copyfile
 
 args = sys.argv[1:]
 if not args:
