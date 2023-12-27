@@ -13,7 +13,7 @@ args = sys.argv[1:]
 if not args:
     print('Usage: python wp_heatmap.py inputfile')
 inputfile = args[0]
-model = eval(args[-1])
+model = args[-1]
 num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
 with open(inputfile) as f:
@@ -25,11 +25,11 @@ with open(inputfile) as f:
 copyfile(inputfile, tmpfile)
 print(calcdir)
 
-if model==6:
+if model=='A':
     from functions_6 import *
-elif model==5:
+elif model=='C':
     from functions_5 import *
-elif model==4:
+elif model=='B':
     from functions_4 import *
 else:
     print('model: ', model)
