@@ -11,7 +11,6 @@ args = sys.argv[1:]
 if not args:
     print('Usage: python sh_heatmap.py inputfile')
 inputfile = args[0]
-model = eval(args[-1])
 num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
 with open(inputfile) as f:
