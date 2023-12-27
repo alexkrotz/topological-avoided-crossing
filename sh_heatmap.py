@@ -6,6 +6,7 @@ import math
 import itertools
 import sys
 import numpy as np
+impor glob
 
 args = sys.argv[1:]
 if not args:
