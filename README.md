@@ -1,4 +1,4 @@
-# pySCWP: A python program for wavepacket dynamics using exact and surface hopping methods. 
+# A python program for complex-valued avoided crossings using exact and surface hopping methods. 
 
 ## Introduction
 This repository contains a set of three models describing complex-valued (topological) avoided crossings 
