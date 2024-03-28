@@ -11,7 +11,7 @@ import glob
 
 args = sys.argv[1:]
 if not args:
-    print('Usage: python wp_heatmap.py inputfile')
+    print('Usage: python wp_heatmap.py inputfile model')
 inputfile = args[0]
 model = args[-1]
 num_tmpfiles = len(glob.glob('inputfile.tmp-*')) + 1

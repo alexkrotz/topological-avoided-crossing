@@ -25,7 +25,7 @@ def erf_vec(a):
 @jit(nopython=True, fastmath=True)
 def theta(x, y):
     Bx = 1
-    return (np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
+    return (np.pi / 2) * (erf_vec(Bx * x) + 1)
 
 
 @jit(nopython=True, fastmath=True)

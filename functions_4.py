@@ -23,16 +23,16 @@ def erf_vec(a):
     return math.erf(a)
 @jit(nopython=True, fastmath=True)
 def theta(x, y):
-    return -np.pi*(np.exp(-(Bx*(x**2) + By*(y**2))/3))#(np.pi / 2) * (erf_vec(Bx * x) + 1)  # (scipy.special.erf(B*x)+1)#
+    return -np.pi*(np.exp(-(Bx*(x**2) + By*(y**2))/3))
 
 
 @jit(nopython=True, fastmath=True)
 def dtheta_x(x, y):  # dtheta/dx
-    return (2*np.pi*Bx*x/3)*np.exp(-(Bx*(x**2) + By*(y**2))/3)#(Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
+    return (2*np.pi*Bx*x/3)*np.exp(-(Bx*(x**2) + By*(y**2))/3)
 
 @jit(nopython=True, fastmath=True)
 def dtheta_y(x, y):  # dtheta/dx
-    return (2*np.pi*By*y/3)*np.exp(-(Bx*(x**2) + By*(y**2))/3)#(Bx * np.exp(-1.0 * (Bx ** 2) * (x ** 2)) * np.sqrt(np.pi))
+    return (2*np.pi*By*y/3)*np.exp(-(Bx*(x**2) + By*(y**2))/3)
 
 @jit(nopython=True, fastmath=True)
 def phi(x, y):

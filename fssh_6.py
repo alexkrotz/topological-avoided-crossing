@@ -256,7 +256,7 @@ def get_dkk_analytical(r): # analytic nonadiabatic coupling of V
     x = r[:,0]
     y = r[:,1]
     dkkx = (1/2)*(1.0j*np.sin(theta(x,y))*dphi_x(x,y) + dtheta_x(x,y))
-    dkky = (1/2)*(1.0j*np.sin(theta(x,y))*dphi_y(x,y) + dtheta_y(x,y))#(1.0j/2)*np.sin(theta(x,y))*dphi(x,y)
+    dkky = (1/2)*(1.0j*np.sin(theta(x,y))*dphi_y(x,y) + dtheta_y(x,y))
     return dkkx, dkky
 
 

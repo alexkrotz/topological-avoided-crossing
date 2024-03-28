@@ -2,7 +2,7 @@ import sys
 import os
 from shutil import copyfile
 import glob
-import numpy as np
+
 
 def main():
     args = sys.argv[1:]
@@ -48,7 +48,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from wp_3ls_1 import runSim, genviz
+                                    from deprecated_files.wp_3ls_1 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
@@ -79,7 +79,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from wp_3ls_2 import runSim, genviz
+                                    from deprecated_files.wp_3ls_2 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
@@ -110,7 +110,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from wp_3ls_3 import runSim, genviz
+                                    from deprecated_files.wp_3ls_3 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
@@ -171,7 +171,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from wp_2 import runSim, genviz
+                                    from deprecated_files.wp_2 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
@@ -204,7 +204,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from wp_3 import runSim, genviz
+                                    from deprecated_files.wp_3 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                         runSim()
@@ -358,7 +358,7 @@ def main():
                                         name, value = line1.split("=")
                                         exec(str(line), globals())
                                 copyfile(filename, tmpfile)
-                                from fssh_3ls_1 import runSim, genviz
+                                from deprecated_files.fssh_3ls_1 import runSim, genviz
                                 if not (os.path.exists(calcdir)):
                                     os.mkdir(calcdir)
                                 if not (viz_only):
@@ -389,7 +389,7 @@ def main():
                                         name, value = line1.split("=")
                                         exec(str(line), globals())
                                 copyfile(filename, tmpfile)
-                                from fssh_3ls_2 import runSim, genviz
+                                from deprecated_files.fssh_3ls_2 import runSim, genviz
                                 if not (os.path.exists(calcdir)):
                                     os.mkdir(calcdir)
                                 if not (viz_only):
@@ -420,7 +420,7 @@ def main():
                                         name, value = line1.split("=")
                                         exec(str(line), globals())
                                 copyfile(filename, tmpfile)
-                                from fssh_3ls_3 import runSim, genviz
+                                from deprecated_files.fssh_3ls_3 import runSim, genviz
                                 if not (os.path.exists(calcdir)):
                                     os.mkdir(calcdir)
                                 if not (viz_only):
@@ -449,7 +449,7 @@ def main():
                                         name, value = line1.split("=")
                                         exec(str(line), globals())
                                 copyfile(filename, tmpfile)
-                                from fssh import runSim, genviz
+                                from deprecated_files.fssh import runSim, genviz
                                 if not (os.path.exists(calcdir)):
                                     os.mkdir(calcdir)
                                 runSim()
@@ -477,7 +477,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from fssh_2 import runSim, genviz
+                                    from deprecated_files.fssh_2 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                     runSim()
@@ -508,7 +508,7 @@ def main():
                                             name, value = line1.split("=")
                                             exec(str(line), globals())
                                     copyfile(filename, tmpfile)
-                                    from fssh_3 import runSim, genviz
+                                    from deprecated_files.fssh_3 import runSim, genviz
                                     if not (os.path.exists(calcdir)):
                                         os.mkdir(calcdir)
                                     if not (viz_only):
