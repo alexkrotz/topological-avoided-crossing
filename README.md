@@ -9,11 +9,13 @@ fewest-switches surface hopping [3] with the gauge fixings implemented in [1] an
 
 ## Usage
 1. Prepare an input file, use the files in /example/ as a guide.
-
 2. Run the code as
 ```python
 python3 main.py input_file
 ```
+3. The output folder includes the following observables: adiabatic populations, diabatic populations
+classical energy (for FSSH simulation only), quantum energy, adiabatic momentum, diabatic momentum, adiabatic population histograms, 
+diabatic population histograms. 
 
 
 
