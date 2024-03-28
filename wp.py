@@ -9,7 +9,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
-from functions_4 import *
 
 num_tmpfiles = len(glob.glob('inputfile.tmp-*'))
 tmpfile = 'inputfile.tmp-' + str(num_tmpfiles)
@@ -20,11 +19,17 @@ with open(tmpfile) as f:
         name, value = line1.split("=")
         exec(str(line), globals())
 
+if model == "model_A":
+    from functions_A import *
+    print('model A')
+if model == "model_B":
+    from functions_B import *
+    print('model B')
+if model == "model_C":
+    from functions_C import *
+    print('model C')
+
 A = A*1000
-
-
-
-
 
 @jit(nopython=True, fastmath=True)
 def V_vec(r):
@@ -39,9 +44,9 @@ def V_vec(r):
 
 hbar = 1
 sigma = 1
-#mass = 1000
 mass = 1
 
+# initial wavepackets
 def wp1(r):
     if init_diab == 1:
         return np.exp((1.0j/hbar)*np.dot(r,pinit))*np.exp(-(1/sigma**2)*np.linalg.norm(r - rinit,axis=1)**2)
@@ -54,6 +59,7 @@ def wp0(r):
     if init_diab == 1:
         return 0 * r[:,0]
 
+# initialize grid parameters
 #xran=[-5,5]
 #Nx = Nx; # N
 #Ny = Ny;
@@ -84,6 +90,8 @@ dy = (yran[1]-yran[0])/(Ny)
 rlist = np.array(tuple(itertools.product(xlist, ylist)),dtype=np.float64)
 rxgrid = rlist[:, 0].reshape(len(rxlist), len(rylist))
 rygrid = rlist[:, 1].reshape(len(rxlist), len(rylist))
+
+# compute electronic eigenvectors on grid
 V_list = V_vec(rlist)
 ev0 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
 ev1 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
@@ -92,13 +100,16 @@ H00 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
 H11 = np.zeros(len(V_list[0,0,:]),dtype=np.float64)
 for n in range(len(V_list[0,0,:])):
     eigvals,eigvecs = np.linalg.eigh(V_list[:,:,n])
+    # eigenvectors
     evecs[:,:,n] = eigvecs
+    # adiabatic surfaces
     ev0[n] = eigvals[0]
     ev1[n] = eigvals[1]
+    # diabatic surfaces
     H00[n] = np.real(V_list[0,0,n])
     H11[n] = np.real(V_list[1,1,n])
 
-
+# convert diabatic wavefunction to adiabatic basis
 def get_psi_adb(psi_db):
     psi_adb = np.zeros_like(psi_db,dtype=complex)
     for n in range(np.shape(psi_db)[-1]):
@@ -110,11 +121,13 @@ def normalize(state_list):
     tot = np.sum(np.abs(state_list)**2)
     return state_list/np.sqrt(tot)
 
-
+# initial wavefunction
 state_list = normalize(np.array([wp0(rlist), wp1(rlist)],dtype=complex))
 
 
-def get_grad(wplist): ## kgrid is k^2
+def get_grad(wplist):
+    # compute the kinetic energy term of the Hamiltonian
+    ## kgrid is k^2
     xdim = Nx+1
     ydim = Ny+1
     wpgrid = wplist.reshape(xdim, ydim)
@@ -135,14 +148,14 @@ kxlist2 = np.concatenate((np.arange(0, Nx2 / 2 + 1, 1),
 klist2 = np.array(tuple(itertools.product(kxlist2, kylist)))
 kxgrid2 = klist2[:, 0].reshape(len(kxlist2), len(kylist))
 kygrid2 = klist2[:, 1].reshape(len(kxlist2), len(kylist))
-def get_tx_grid(grid):
+def get_tx_grid(grid): # get grid for calculating transmitted values
     tx_grid = grid[rxgrid > rxmin]
     return tx_grid.reshape((int(len(tx_grid)/len(rylist)),len(rylist)))
-def get_px(wplist):
+def get_px(wplist): # compute transmitted x direction momentum
     wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kxgrid2 * wpgrid_k)) / (np.sum(np.abs(wpgrid) ** 2)))
-def get_py(wplist):
+def get_py(wplist): # compute transmitted y direction momentum
     wpgrid = get_tx_grid(wplist.reshape(Nx + 1, Ny + 1))
     wpgrid_k = np.fft.fft2(wpgrid)
     return np.real(np.sum(np.conj(wpgrid) * np.fft.ifft2(kygrid2 * wpgrid_k)) / (np.sum(np.conj(wpgrid) * wpgrid)))
@@ -153,14 +166,14 @@ state_vec_adb = get_psi_adb(state_list)
 #print('Adiabatic: ')
 #print('<0|Px|0>: ',np.round(get_px(state_vec_adb[0]),5),' <0|Py|0>: ', np.round(get_py(state_vec_adb[0]),5))
 #print('<1|Px|1>: ',np.round(get_px(state_vec_adb[1]),5),' <1|Py|1>: ', np.round(get_py(state_vec_adb[1]),5))
-def get_grad_state(state_list):
+def get_grad_state(state_list): # apply kinetic term to wavefunction
     out_list = np.zeros_like(state_list,dtype=complex)
     for n in range(len(state_list)):
         out_list[n] = get_grad(state_list[n])
     return out_list
 
 
-def get_V_state(state_list):
+def get_V_state(state_list): # Apply potential to wavefunction
     out_list = np.zeros_like(state_list,dtype=complex)
     for n in range(np.shape(V_list)[-1]):
         v = V_list[:,:,n]
@@ -171,7 +184,7 @@ def get_V_state(state_list):
 pmax = np.max(np.abs(state_list)**2)
 
 
-def timestep(state, dt):
+def timestep(state, dt): # evolve wavefunction forward one timestep (first timestep only)
     grad = get_grad_state(state)
     pot = get_V_state(state)
     out_vec = np.zeros_like(grad,dtype=complex)
@@ -183,21 +196,21 @@ def timestep(state, dt):
     return out_vec
 
 
-def get_E(state):
+def get_E(state): # compute energy of state
     grad = get_grad_state(state)
     pot = get_V_state(state)
     return np.real(np.sum(np.conj(state)*(-grad + pot)))
 
 
 #@jit(nopython=True,fastmath=True)
-def timestep2(state_n,state_nm1,dt):
+def timestep2(state_n,state_nm1,dt): # inexpensive wavefunction evolution
     grad = get_grad_state(state_n)
     pot = get_V_state(state_n)
     state_np1 = state_nm1 + (1.0j*grad - 1.0j*pot)*2*dt
     return state_np1
 
 
-def plot_state(state_vec,filename):
+def plot_state(state_vec,filename): # visualize wavefunction
     xdim = Nx+1
     ydim = Ny+1
     psi1 = state_vec[1]
