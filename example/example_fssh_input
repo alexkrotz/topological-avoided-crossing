@@ -1,0 +1,15 @@
+A_vals=[0.02] # separation of diabatic surfaces
+p_vals=[16] # x-direction momentum
+sim='FSSH' # method 'FSSH'
+scan=True # must be true!
+model=6 # 6 is model A, 5 is model C, 4 is model B
+rescale_method=1 # 1 is Dmin, 2 is ReMax
+N=2000 # number of trajectories
+p_vec_list = np.array([[p, 0] for p in p_vals])
+r_init=[-3,0] # initial position of wavepacket
+dt_fac=1 # scaling of time interval
+t_mult=1.5 # scaling of total time
+alpha_vals = [0.0] # must be 0
+B_vals = [[1.0,0]] # Bx and By values
+W_vals = [2.0] # W values
+init_diab=1 # initial diabatic surface (0 or 1)

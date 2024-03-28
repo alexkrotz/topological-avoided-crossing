@@ -7,6 +7,14 @@ The models can be solved with either exact wavepacket dynamics using the Fourier
 fewest-switches surface hopping [3] with the gauge fixings implemented in [1] and [4].
 
 
+## Usage
+1. Prepare an input file, use the files in /example/ as a guide.
+
+2. Run the code as
+```python
+python3 main.py input_file
+```
+
 
 
 
