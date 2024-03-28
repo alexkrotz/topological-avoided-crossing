@@ -20,12 +20,16 @@ with open(tmpfile) as f:
         name, value = line1.split("=")
         exec(str(line), globals())
 
-if model == 6:
-    from functions_6 import *
-if model == 5:
-    from functions_5 import *
-if model == 4:
-    from functions_4 import *
+
+if model == "model_A":
+    from functions_A import *
+    print('model A')
+if model == "model_B":
+    from functions_B import *
+    print('model B')
+if model == "model_C":
+    from functions_C import *
+    print('model C')
 
 
 hbar = 1
