@@ -2,7 +2,7 @@
 
 ## Introduction
 This repository contains a set of three models describing complex-valued (topological) avoided crossings 
-studies in [1].
+studied in [1].
 The models can be solved with either exact wavepacket dynamics using the Fourier transform method [2] or
 fewest-switches surface hopping [3] with the gauge fixings implemented in [1] and [4].
 
