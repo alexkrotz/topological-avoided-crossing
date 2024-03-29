@@ -1,0 +1,15 @@
+sim='WP'
+scan=True
+model='model_A'
+p_vec_list = np.array([[p, 0] for p in p_vals])
+xran=[-10,25]
+yran=[-15,15]
+r_init=[-3,0]
+dt_fac=1
+t_mult=1.5
+pxmax=50
+pymax=50
+alpha_vals = [0.0]
+B_vals = [[1.0,0.0]]
+W_vals = [0]
+init_diab=0
