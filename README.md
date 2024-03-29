@@ -3,19 +3,39 @@
 ## Introduction
 This repository contains a set of three models describing complex-valued (topological) avoided crossings 
 studied in [1].
-The models can be solved with either exact wavepacket dynamics using the Fourier transform method [2] or
-fewest-switches surface hopping [3] with the gauge fixings implemented in [1] and [4].
+The models can be solved with either exact wavepacket (WP) dynamics using the Fourier transform method [2] or
+fewest-switches surface hopping (FSSH) [3] with the gauge fixings implemented in [1] and [4].
 
 
-## Usage
+## Basic Usage
 1. Prepare an input file, use the files in /example/ as a guide.
 2. Run the code as
 ```python
 python3 main.py input_file
 ```
-3. The output folder includes the following observables: adiabatic populations, diabatic populations
-classical energy (for FSSH simulation only), quantum energy, adiabatic momentum, diabatic momentum, adiabatic population histograms, 
-diabatic population histograms. 
+3. FSSH calculations can be run on top of each other automatically producing a new 
+set of output files with a new "calculation index" appended to the end of each output
+filename. 
+3. The output folder includes the following observables for FSSH calculations (where n is the calculation index):
+   * transmitted adiabatic populations: `pop_adb_n.npy`
+   * transmitted diabatic populations: `pop_db_n.npy` 
+   * transmitted diabatic momentum: `p_db_n.npy`
+   * classical energy: `Ec_n.npy`
+   * quantum energy: `Eq_n.npy`
+   * upper adiabatic surface population histograms: `adb_1_hist_n.npy`
+   * lower adiabatic surface population histograms: `adb_0_hist_n.npy`
+   * upper diabatic surface population histograms: `db_1_hist_n.npy`
+   * lower diabatic surface population histograms: `db_0_hist_n.npy`
+   * grid x-axis: `rxgrid.npy`
+   * grid y-axis: `rygrid.npy`
+4. The output folder includes the following for WP calculations:
+   * time-dependent wavefunction: `psi.npy`
+   * list of time steps: `tdat.npy`
+
+## Reproducing Publication Data
+To reproduce the data used in [1] refer to the directory /publication_data/ for input
+files, directory structure, and auxilliary scripts. 
+1. 
 
 
 
