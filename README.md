@@ -93,7 +93,7 @@ called `heatmap` containing the files:
    * time axis: `tdat.csv`
 ## References
 [1] Krotz, A. and Tempelaar, R. Treating Geometric Phase Effects in Nonadiabatic Dynamics.
-Phys. Rev. A 109, 2024, 032210.
+Phys. Rev. A 109, 2024, 032210. [https://doi.org/10.1103/PhysRevA.109.032210](https://doi.org/10.1103/PhysRevA.109.032210)
 
 [2] Kosloff, D.; Kosloff, R. A Fourier Method Solution for the Time Dependent Schrödinger Equation
 as a Tool in Molecular Dynamics. J. Comput. Phys. 1983, 52 (1), 35–53.
