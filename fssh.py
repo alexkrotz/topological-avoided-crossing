@@ -480,7 +480,7 @@ def hop(r,p,cg_db,act_surf,act_surf_ind, hop_list,p0):
                 dkkqy = -1.0 * np.conj(dkkqy)
             # different rescaling options
             if rescale_method==1: # rescale in nabla theta (our method)
-                p, qct_surf, act_surf_ind, hop_list = method1_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf, hop_list,r,0)
+                p, act_surf, act_surf_ind, hop_list = method1_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf, hop_list,r,0)
             if rescale_method==2: # default joes method
                 p, act_surf, act_surf_ind, hop_list = method2_rescale(dkkqx, dkkqy, p, pos, ev_diff, k, act_surf_ind, act_surf, hop_list,r,0)
             if rescale_method == 9: # joes method for x < 0
